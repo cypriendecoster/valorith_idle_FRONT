@@ -15,14 +15,13 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Gestion globale des réponses (401 / 403)
+// Gestion globale des réponses (401 uniquement)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error?.response?.status;
 
-    if (status === 401 || status === 403) {
-      // Token invalide / expiré ou accès interdit -> logout global
+    if (status === 401) {
       localStorage.removeItem('authToken');
       localStorage.removeItem('authUser');
 
