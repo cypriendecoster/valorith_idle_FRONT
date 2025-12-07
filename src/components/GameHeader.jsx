@@ -1,12 +1,25 @@
 import React from 'react';
 
+function formatPlayTime(seconds) {
+  const total = Number(seconds || 0);
+  if (total <= 0) return '-';
+
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+
+  if (hours > 0) {
+    return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
+  }
+  return `${minutes}m`;
+}
+
 function GameHeader({ user, stats, onLogout }) {
   return (
     <header className="border-b border-amber-500/30 bg-black/40 backdrop-blur-sm">
       <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold tracking-wide">
-            ASHKAR <span className="text-amber-400">FORGE</span> IDLE
+          <h1 className="font-heading text-xl sm:text-2xl md:text-3xl font-semibold tracking-wide">
+            VALORITH <span className="text-amber-400">FORGE</span> IDLE
           </h1>
           <p className="text-xs sm:text-sm text-slate-400">
             Forgeron : <span className="text-amber-300">{user.username}</span>
@@ -34,10 +47,10 @@ function GameHeader({ user, stats, onLogout }) {
               </div>
               <div>
                 <p className="uppercase tracking-widest text-slate-500">
-                  Sessions
+                  Temps de jeu
                 </p>
                 <p className="font-semibold text-amber-300">
-                  {stats.login_count ?? '-'}
+                  {formatPlayTime(stats.total_play_time_seconds)}
                 </p>
               </div>
             </div>
@@ -57,3 +70,4 @@ function GameHeader({ user, stats, onLogout }) {
 }
 
 export default GameHeader;
+
