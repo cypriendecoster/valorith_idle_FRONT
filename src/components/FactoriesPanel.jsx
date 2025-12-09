@@ -36,7 +36,9 @@ function computeFactoryNextCost(factory, skills) {
   }
 
   const baseCostWithLevel = baseCost * Math.pow(1.18, nextLevel - 1);
-  return baseCostWithLevel * costMultiplier;
+  const realmCostMultiplier = Number(factory.realm_cost_multiplier || 1);
+
+  return baseCostWithLevel * costMultiplier * realmCostMultiplier;
 }
 
 function computeFactoryCurrentProduction(factory, skills) {
@@ -64,7 +66,16 @@ function computeFactoryCurrentProduction(factory, skills) {
   });
 
   const baseProdWithLevel = baseProduction * Math.pow(1.15, level - 1);
-  return baseProdWithLevel * prodMultiplier * globalMultiplier;
+  // Multiplicateur de production du royaume (remonté par le back)
+  const realmProductionMultiplier = Number(
+    factory.realm_production_multiplier || 1
+  );
+  return (
+    baseProdWithLevel *
+    prodMultiplier *
+    globalMultiplier *
+    realmProductionMultiplier
+  );
 }
 
 function FactoriesPanel({
@@ -82,23 +93,20 @@ function FactoriesPanel({
   const startHoldUpgrade = (factoryId, canAfford) => {
     if (!factoryId || !canAfford) return;
 
-    // On améliore une fois immédiatement (en plus du onClick si tu le gardes)
-    onUpgradeFactory(factoryId);
-
-    // On évite de recréer un timer si déjà en cours
+    // Si un timer existe déjà, on ne refait rien
     if (holdTimersRef.current[factoryId]) return;
 
-    // Petit délai avant de démarrer le spam (pour éviter les fautes de clic)
+    // Après 500ms de clic maintenu, on commence à spammer
     const timeoutId = setTimeout(() => {
       const intervalId = setInterval(() => {
         onUpgradeFactory(factoryId);
-      }, 150); // vitesse de spam en ms
+      }, 300); // vitesse : 1 upgrade / 300ms
 
       holdTimersRef.current[factoryId] = {
         timeoutId: null,
         intervalId,
       };
-    }, 300);
+    }, 500); // délai avant de démarrer le spam
 
     holdTimersRef.current[factoryId] = {
       timeoutId,
@@ -120,15 +128,35 @@ function FactoriesPanel({
     delete holdTimersRef.current[factoryId];
   };
 
+  // Ne montrer qu'une seule usine verrouillée à la fois :
+  // la prochaine dans l'ordre, plus toutes les usines déjà débloquées.
+  const sortedFactories = [...factories].sort(
+    (a, b) => Number(a.unlock_order) - Number(b.unlock_order)
+  );
+
+  const nextLockedFactory = sortedFactories.find(
+    (f) => Number(f.level || 0) <= 0
+  );
+
+  const visibleFactories = sortedFactories.filter((f) => {
+    const isUnlocked = Number(f.level || 0) > 0;
+    if (isUnlocked) return true;
+    if (!nextLockedFactory) return false;
+    return Number(f.factory_id) === Number(nextLockedFactory.factory_id);
+  });
+
   return (
-    <section className="bg-black/30 border border-sky-500/20 rounded-xl p-3 sm:p-4 md:p-5 shadow-[0_0_40px_rgba(56,189,248,0.12)]">
+    <section className="bg-black/40 backdrop-blur-sm border border-sky-500/20 rounded-xl p-3 sm:p-4 md:p-5 shadow-[0_0_40px_rgba(56,189,248,0.12)]">
       <h2 className="text-base sm:text-lg md:text-xl font-semibold mb-3 flex items-center gap-2">
         <span className="inline-block h-1 w-6 bg-sky-400 rounded-full" />
         Usines
       </h2>
 
       <ul className="space-y-2 text-xs sm:text-sm">
-        {factories.map((f) => {
+        {visibleFactories.map((f) => {
+          const level = Number(f.level || 0);
+          const isUnlocked = level > 0;
+
           const factoryResource = resources.find(
             (r) => r.resource_id === f.resource_id
           );
@@ -159,62 +187,79 @@ function FactoriesPanel({
 
           const isUpgrading = upgradingFactoryId === f.factory_id;
 
+          let buttonLabel;
+          if (isUpgrading) {
+            buttonLabel = 'Amélioration...';
+          } else if (!isUnlocked && canAfford) {
+            buttonLabel = 'Débloquer';
+          } else if (canAfford) {
+            buttonLabel = 'Améliorer';
+          } else {
+            buttonLabel = 'Ressources insuffisantes';
+          }
+
           return (
             <li
               key={f.factory_id}
-              className="factory-gradient bg-slate-900/60 rounded-lg px-3 py-2 border border-slate-700/40"
+              className="factory-gradient relative bg-slate-900/60 rounded-lg px-3 py-2 border border-slate-700/40"
               style={itemStyle}
             >
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-slate-100">{f.name}</span>
-                <span className="text-[11px] sm:text-xs text-slate-400">
-                  Niveau{' '}
-                  <span className="font-semibold text-sky-300">
-                    {f.level}
+              {/* Overlay cadenas pour les usines non débloquées */}
+              {!isUnlocked && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <span className="text-5xl sm:text-6xl text-slate-200/80 drop-shadow-lg">
+                    🔒
                   </span>
-                </span>
+                </div>
+              )}
+
+              {/* Contenu assombri quand non débloqué */}
+              <div className={!isUnlocked ? 'opacity-40' : ''}>
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-slate-100">{f.name}</span>
+                  <span className="text-[11px] sm:text-xs text-slate-400">
+                    Niveau{' '}
+                    <span className="font-semibold text-sky-300">
+                      {f.level}
+                    </span>
+                  </span>
+                </div>
+
+                <p className="text-[11px] sm:text-xs text-slate-400 mt-1">
+                  Production actuelle :{' '}
+                  <span className="text-sky-300 font-mono">
+                    {Math.round(currentProduction).toLocaleString('fr-FR')}
+                  </span>
+                </p>
+
+                <p className="text-[11px] sm:text-xs text-slate-400 mt-1">
+                  Coût prochain niveau :{' '}
+                  <span
+                    className={`font-mono ${
+                      canAfford ? 'text-emerald-300' : 'text-red-400'
+                    }`}
+                  >
+                    {Math.round(nextCost).toLocaleString('fr-FR')}
+                  </span>{' '}
+                  {factoryResource?.name && (
+                    <span className="text-slate-500">
+                      ({factoryResource.name})
+                    </span>
+                  )}
+                </p>
               </div>
 
-              <p className="text-[11px] sm:text-xs text-slate-400 mt-1">
-                Production actuelle :{' '}
-                <span className="text-sky-300 font-mono">
-                  {Math.round(currentProduction).toLocaleString('fr-FR')}
-                </span>
-              </p>
-
-              <p className="text-[11px] sm:text-xs text-slate-400 mt-1">
-                Coût prochain niveau :{' '}
-                <span
-                  className={`font-mono ${
-                    canAfford ? 'text-emerald-300' : 'text-red-400'
-                  }`}
-                >
-                  {Math.round(nextCost).toLocaleString('fr-FR')}
-                </span>{' '}
-                {factoryResource?.name && (
-                  <span className="text-slate-500">
-                    ({factoryResource.name})
-                  </span>
-                )}
-              </p>
-
+              {/* Bouton en dehors de l'opacité pour rester bien visible */}
               <button
                 type="button"
                 onClick={() => onUpgradeFactory(f.factory_id)}
                 onMouseDown={() => startHoldUpgrade(f.factory_id, canAfford)}
                 onMouseUp={() => stopHoldUpgrade(f.factory_id)}
                 onMouseLeave={() => stopHoldUpgrade(f.factory_id)}
-                // Optionnel pour mobile :
-                // onTouchStart={() => startHoldUpgrade(f.factory_id, canAfford)}
-                // onTouchEnd={() => stopHoldUpgrade(f.factory_id)}
                 disabled={isUpgrading || !canAfford}
                 className="mt-2 inline-flex items-center rounded-md bg-sky-500/90 hover:bg-sky-400 disabled:opacity-50 disabled:cursor-not-allowed text-slate-900 text-[11px] sm:text-xs font-semibold px-3 py-1 transition-colors"
               >
-                {isUpgrading
-                  ? 'Amélioration...'
-                  : canAfford
-                  ? 'Améliorer'
-                  : 'Ressources insuffisantes'}
+                {buttonLabel}
               </button>
             </li>
           );
@@ -225,6 +270,11 @@ function FactoriesPanel({
 }
 
 export default FactoriesPanel;
+
+
+
+
+
 
 
 

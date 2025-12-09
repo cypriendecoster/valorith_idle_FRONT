@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import './App.css';
 import AuthPage from './pages/AuthPage';
 import GamePage from './pages/GamePage';
+import ProfilePage from './pages/ProfilePage'; // 👉 ajout
 import { authService } from './services/AuthService';
 
 function App() {
@@ -44,6 +45,17 @@ function App() {
           )
         }
       />
+      {/* 👉 nouvelle route profil */}
+      <Route
+        path="/profile"
+        element={
+          isAuthenticated ? (
+            <ProfilePage onLogout={handleLogout} />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
       {/* Redirections par défaut */}
       <Route
         path="/"
@@ -62,6 +74,7 @@ function App() {
 }
 
 export default App;
+
 
 
 

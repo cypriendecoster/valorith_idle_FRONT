@@ -1,10 +1,29 @@
 import React from 'react';
 
+// Mapping nom de compétence (normalisé) -> image dans public/Assets/ASHKAR
+const SKILL_BACKGROUNDS = {
+  'souffle des forges': '/Assets/ASHKAR/Souffle_des_forges.png',
+  'optimisation des fours': '/Assets/ASHKAR/Optimisation_des_fours.png',
+  'brasiers persistants': '/Assets/ASHKAR/Brasiers_persistants.png',
+  'maitrise pyroclastique': '/Assets/ASHKAR/Maitre_pyroclastique.png',
+  'coeur dashkar': '/Assets/ASHKAR/Coeur_ashkar.png',
+};
+
+function normalizeSkillName(name) {
+  if (!name) return '';
+  return name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/['’`]/g, '')
+    .trim();
+}
+
 function SkillsPanel({ skills, upgradingSkillId, onUpgradeSkill }) {
   if (!skills) return null;
 
   return (
-    <section className="bg-black/30 border border-violet-500/20 rounded-xl p-3 sm:p-4 md:p-5 shadow-[0_0_40px_rgba(139,92,246,0.18)]">
+    <section className="bg-black/40 backdrop-blur-sm border border-violet-500/20 rounded-xl p-3 sm:p-4 md:p-5 shadow-[0_0_40px_rgba(139,92,246,0.18)]">
       <h2 className="text-base sm:text-lg md:text-xl font-semibold mb-3 flex items-center gap-2">
         <span className="inline-block h-1 w-6 bg-violet-400 rounded-full" />
         Compétences
@@ -18,56 +37,88 @@ function SkillsPanel({ skills, upgradingSkillId, onUpgradeSkill }) {
           const isLocked = Boolean(skill.isLocked);
           const isMax = level >= maxLevel || nextCost === null;
 
+          const normalizedName = normalizeSkillName(skill.name);
+          let bg = SKILL_BACKGROUNDS[normalizedName];
+          if (!bg && normalizedName.includes('ashkar')) {
+            bg = '/Assets/ASHKAR/Coeur_ashkar.png';
+          }
+
+          const itemStyle = bg
+            ? {
+              backgroundImage: `url('${bg}')`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }
+            : undefined;
+
+          const isUpgrading = upgradingSkillId === skill.skillId;
+
           return (
             <li
               key={skill.skillId}
-              className="rounded-lg border px-3 py-2 bg-slate-900/60 border-slate-700/40"
+              className="relative rounded-lg border px-3 py-2 bg-slate-900/60 border-slate-700/40 flex flex-col"
+              style={itemStyle}
             >
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-semibold text-slate-100">
-                  {skill.name}
-                </span>
-                <span className="text-[10px] sm:text-[11px] text-slate-400">
-                  Niveau{' '}
-                  <span className="font-semibold text-violet-300">
-                    {level}/{maxLevel}
+              {isLocked && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <span className="text-5xl sm:text-6xl text-slate-200/80 drop-shadow-lg">
+                    🔒
                   </span>
-                </span>
-              </div>
+                </div>
+              )}
 
-              <p className="text-[11px] sm:text-xs text-slate-400 mb-1">
-                {skill.description}
-              </p>
+              <div className={`${isLocked ? 'opacity-40' : ''} relative flex flex-col h-full`}>
+                {/* Titre + niveau */}
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-semibold text-amber-50 drop-shadow-[0_0_4px_rgba(0,0,0,0.8)]">
+                    {skill.name}
+                  </span>
+                  <span className="text-[10px] sm:text-[11px] text-amber-100 drop-shadow-[0_0_4px_rgba(0,0,0,0.8)]">
+                    Niveau{' '}
+                    <span className="font-semibold text-violet-200">
+                      {level}/{maxLevel}
+                    </span>
+                  </span>
+                </div>
 
-              <p className="text-[11px] text-slate-400 mt-1">
+                {/* Description */}
+                <p className="text-[11px] sm:text-xs text-amber-100 mb-2 drop-shadow-[0_0_4px_rgba(0,0,0,0.9)]">
+                  {skill.description}
+                </p>
+
+                {/* Coût ou niveau max */}
                 {isMax ? (
-                  <span className="text-emerald-300">
+                  <p className="text-[11px] text-emerald-300 mt-1 drop-shadow-[0_0_4px_rgba(0,0,0,0.9)]">
                     Niveau maximal atteint
-                  </span>
+                  </p>
                 ) : (
                   <>
-                    Coût prochain niveau :{' '}
-                    <span className="font-mono text-amber-300">
+                    <p className="text-[11px] text-amber-50 mt-1 drop-shadow-[0_0_4px_rgba(0,0,0,0.9)]">
+                      Coût du prochain niveau :
+                    </p>
+                    <p className="text-[11px] text-amber-200 font-mono drop-shadow-[0_0_4px_rgba(0,0,0,0.9)]">
                       {Math.round(nextCost).toLocaleString('fr-FR')}
-                    </span>
+                    </p>
                   </>
                 )}
-              </p>
+              </div>
 
+              {/* Bouton, toujours en bas de la carte */}
               <button
-                type="button"
-                onClick={() => onUpgradeSkill(skill.skillId)}
-                disabled={isLocked || isMax || upgradingSkillId === skill.skillId}
-                className="mt-2 inline-flex items-center rounded-md bg-violet-500/90 hover:bg-violet-400 disabled:opacity-50 disabled:cursor-not-allowed text-slate-900 text-[11px] sm:text-xs font-semibold px-3 py-1 transition-colors"
-              >
-                {isLocked
-                  ? 'Royaume non débloqué'
-                  : isMax
-                  ? 'Niveau max'
-                  : upgradingSkillId === skill.skillId
-                  ? 'Amélioration...'
-                  : 'Améliorer'}
-              </button>
+  type="button"
+  onClick={() => onUpgradeSkill(skill.skillId)}
+  disabled={isLocked || isMax || isUpgrading}
+  className="mt-2 inline-flex self-start items-center rounded-md bg-violet-500/90 hover:bg-violet-400 disabled:opacity-50 disabled:cursor-not-allowed text-slate-900 text-[11px] sm:text-xs font-semibold px-3 py-1 transition-colors"
+>
+  {isLocked
+    ? 'Royaume non débloqué'
+    : isMax
+    ? 'Niveau max'
+    : isUpgrading
+    ? 'Amélioration...'
+    : 'Améliorer'}
+</button>
+
             </li>
           );
         })}
@@ -77,3 +128,10 @@ function SkillsPanel({ skills, upgradingSkillId, onUpgradeSkill }) {
 }
 
 export default SkillsPanel;
+
+
+
+
+
+
+

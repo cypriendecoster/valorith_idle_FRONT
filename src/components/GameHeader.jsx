@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 function formatPlayTime(seconds) {
   const total = Number(seconds || 0);
@@ -14,6 +15,12 @@ function formatPlayTime(seconds) {
 }
 
 function GameHeader({ user, stats, onLogout }) {
+  const navigate = useNavigate();
+
+  const handleGoToProfile = () => {
+    navigate('/profile');
+  };
+
   return (
     <header className="border-b border-amber-500/30 bg-black/40 backdrop-blur-sm">
       <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -56,13 +63,22 @@ function GameHeader({ user, stats, onLogout }) {
             </div>
           )}
 
-          <button
-            type="button"
-            onClick={onLogout}
-            className="text-xs sm:text-sm px-3 py-1 rounded-md border border-slate-600 text-slate-200 hover:bg-slate-800/60 transition-colors self-end sm:self-auto"
-          >
-            Se déconnecter
-          </button>
+          <div className="flex gap-2 self-end sm:self-auto">
+            <button
+              type="button"
+              onClick={handleGoToProfile}
+              className="text-xs sm:text-sm px-3 py-1 rounded-md border border-sky-500 text-sky-200 hover:bg-sky-900/40 transition-colors"
+            >
+              Mon profil
+            </button>
+            <button
+              type="button"
+              onClick={onLogout}
+              className="text-xs sm:text-sm px-3 py-1 rounded-md border border-slate-600 text-slate-200 hover:bg-slate-800/60 transition-colors"
+            >
+              Se déconnecter
+            </button>
+          </div>
         </div>
       </div>
     </header>
@@ -70,4 +86,5 @@ function GameHeader({ user, stats, onLogout }) {
 }
 
 export default GameHeader;
+
 

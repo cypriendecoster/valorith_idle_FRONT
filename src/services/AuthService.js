@@ -41,6 +41,19 @@ export const authService = {
     return response.data;
   },
 
+  async changePassword(currentPassword, newPassword) {
+    const response = await api.post('/api/auth/change-password', {
+      currentPassword,
+      newPassword,
+    });
+    return response.data;
+  },
+
+  async logoutAllSessions() {
+  const response = await api.post('/api/auth/logout-all');
+  return response.data;
+},
+
   logout() {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
@@ -60,3 +73,4 @@ export const authService = {
     }
   },
 };
+
