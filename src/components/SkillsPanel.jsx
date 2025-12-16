@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatAmount } from '../utils/formatNumber';
 
 // Mapping nom de compétence (normalisé) -> image dans public/Assets/ASHKAR
 const SKILL_BACKGROUNDS = {
@@ -7,6 +8,17 @@ const SKILL_BACKGROUNDS = {
   'brasiers persistants': '/Assets/ASHKAR/Brasiers_persistants.png',
   'maitrise pyroclastique': '/Assets/ASHKAR/Maitre_pyroclastique.png',
   'coeur dashkar': '/Assets/ASHKAR/Coeur_ashkar.png',
+
+  // AQUERUS
+  'coeur abyssal': '/Assets/AQUERUS/Coeur_abyssal.png',
+  'coeur des abysses': '/Assets/AQUERUS/Coeur_abyssal.png',
+  'coeur des abymes': '/Assets/AQUERUS/Coeur_abyssal.png',
+  'coeur de leviathan': '/Assets/AQUERUS/Coeur_de_leviathan.png',
+  'courants profonds': '/Assets/AQUERUS/Courants_profonds.png',
+  'flux persistant': '/Assets/AQUERUS/Flux_persistant.png',
+  'pression optimale': '/Assets/AQUERUS/Pression_optimale.png',
+  'saturation abyssale': '/Assets/AQUERUS/Saturation_abyssale.png',
+  'source abyssale': '/Assets/AQUERUS/Source_abyssale.png',
 };
 
 function normalizeSkillName(name) {
@@ -15,6 +27,8 @@ function normalizeSkillName(name) {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
+    .replace(/[œ]/g, 'oe')
+    .replace(/[æ]/g, 'ae')
     .replace(/['’`]/g, '')
     .trim();
 }
@@ -97,7 +111,7 @@ function SkillsPanel({ skills, upgradingSkillId, onUpgradeSkill }) {
                       Coût du prochain niveau :
                     </p>
                     <p className="text-[11px] text-amber-200 font-mono drop-shadow-[0_0_4px_rgba(0,0,0,0.9)]">
-                      {Math.round(nextCost).toLocaleString('fr-FR')}
+                      {formatAmount(Math.round(nextCost))}
                     </p>
                   </>
                 )}
@@ -128,10 +142,6 @@ function SkillsPanel({ skills, upgradingSkillId, onUpgradeSkill }) {
 }
 
 export default SkillsPanel;
-
-
-
-
 
 
 

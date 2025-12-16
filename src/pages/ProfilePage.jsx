@@ -5,6 +5,13 @@ import { authService } from '../services/AuthService';
 import { profileService } from '../services/ProfileService';
 import GameHeader from '../components/GameHeader';
 
+const ULTIMATE_BADGE_CODE = 'MONSTRE_DU_IDLE';
+
+function isValidEmail(email) {
+  if (!email) return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
+
 function formatDate(dateString) {
   if (!dateString) return '-';
   const d = new Date(dateString);
@@ -30,7 +37,7 @@ function ProfilePage({ onLogout }) {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  // Édition profil
+  // Edition profil
   const [editUsername, setEditUsername] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [profileSaving, setProfileSaving] = useState(false);
@@ -49,6 +56,15 @@ function ProfilePage({ onLogout }) {
   const [showLogoutAllModal, setShowLogoutAllModal] = useState(false);
   const [logoutAllLoading, setLogoutAllLoading] = useState(false);
   const [logoutAllError, setLogoutAllError] = useState('');
+
+  const scrollToSection = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    const headerOffset = 80;
+    const y = el.getBoundingClientRect().top + window.scrollY - headerOffset;
+    window.scrollTo({ top: y, behavior: 'smooth' });
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -82,11 +98,16 @@ function ProfilePage({ onLogout }) {
       return;
     }
 
+    if (!isValidEmail(editEmail)) {
+      setProfileError('Format email invalide.');
+      return;
+    }
+
     try {
       setProfileSaving(true);
       const res = await profileService.updateProfile({
-        username: editUsername,
-        email: editEmail,
+        username: editUsername.trim(),
+        email: editEmail.trim(),
       });
 
       setProfile((prev) => ({
@@ -99,7 +120,7 @@ function ProfilePage({ onLogout }) {
       console.error(err);
       setProfileError(
         err.response?.data?.message ||
-          'Erreur lors de la mise à jour du profil.'
+        'Erreur lors de la mise à jour du profil.'
       );
     } finally {
       setProfileSaving(false);
@@ -134,7 +155,11 @@ function ProfilePage({ onLogout }) {
         currentPassword,
         newPassword
       );
-      setPwSuccess(res.message || 'Mot de passe mis à jour avec succès.');
+      setPwSuccess(
+        res.message ||
+        'Mot de passe mis à jour avec succès. Tu devras te reconnecter sur tes autres appareils.'
+      );
+
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -142,7 +167,7 @@ function ProfilePage({ onLogout }) {
       console.error(err);
       setPwError(
         err.response?.data?.message ||
-          'Erreur lors du changement de mot de passe.'
+        'Erreur lors du changement de mot de passe.'
       );
     } finally {
       setPwLoading(false);
@@ -159,7 +184,7 @@ function ProfilePage({ onLogout }) {
       console.error(err);
       setLogoutAllError(
         err.response?.data?.message ||
-          'Erreur lors de la déconnexion de toutes les sessions.'
+        'Erreur lors de la déconnexion de toutes les sessions.'
       );
     } finally {
       setLogoutAllLoading(false);
@@ -168,7 +193,11 @@ function ProfilePage({ onLogout }) {
 
   if (loading)
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-950 via-slate-900 to-amber-950 text-amber-100">
+      <div
+        className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-950 via-slate-900 to-amber-950 text-amber-100"
+        aria-busy="true"
+        aria-live="polite"
+      >
         <p className="text-xl animate-pulse">Chargement du profil…</p>
       </div>
     );
@@ -176,18 +205,23 @@ function ProfilePage({ onLogout }) {
   if (error)
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-950 text-red-400">
-        {error}
+        <p role="alert">{error}</p>
       </div>
     );
 
   if (!profile)
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-950 text-amber-100">
-        Profil introuvable.
+        <p role="alert">Profil introuvable.</p>
       </div>
     );
 
   const { user, stats, realms, badges = [] } = profile;
+
+  const isProfileDirty =
+    editUsername.trim() !== (user.username || '') ||
+    editEmail.trim() !== (user.email || '');
+
 
   const headerStats = (() => {
     if (!stats) return null;
@@ -212,52 +246,115 @@ function ProfilePage({ onLogout }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-amber-950 text-slate-100">
-      <GameHeader user={user} stats={headerStats} onLogout={onLogout} />
+      <GameHeader
+        user={user}
+        stats={headerStats}
+        onLogout={onLogout}
+        onGoToSection={scrollToSection}
+      />
 
-      <main className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-10 space-y-6">
-        {/* Navigation retour */}
+      <main
+        className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-10 space-y-6"
+        aria-labelledby="profile-main-title"
+      >
+        {/* Bouton retour (desktop + mobile, en plus du menu) */}
         <button
           type="button"
           onClick={() => navigate('/game')}
-          className="text-xs sm:text-sm px-3 py-1 rounded-md border border-slate-600 text-slate-200 hover:bg-slate-800/60 transition-colors mb-2"
+          className="text-xs sm:text-sm text-slate-300 hover:text-amber-300 inline-flex items-center gap-1"
+          aria-label="Revenir à la page de jeu"
         >
-          ← Retour au jeu
+          <span aria-hidden="true">←</span>
+          <span>Retour au jeu</span>
         </button>
 
+        {/* Infos joueur */}
+        <section
+          id="profile-section-info"
+          className="scroll-mt-28 bg-black/30 border border-slate-700/60 rounded-xl p-4 sm:p-5 shadow-[0_0_35px_rgba(15,23,42,0.7)] space-y-3"
+          aria-labelledby="profile-info-title"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <h2
+              id="profile-info-title"
+              className="text-base sm:text-lg md:text-xl font-semibold flex items-center gap-2"
+            >
+              <span className="inline-block h-1 w-6 bg-amber-400 rounded-full" />
+              Profil de {user.username}
+            </h2>
+          </div>
+
+          <p className="text-xs sm:text-sm text-slate-300">
+            Adresse e-mail :{' '}
+            <span className="font-semibold text-amber-200">{user.email}</span>
+          </p>
+          <p className="text-xs sm:text-sm text-slate-400">
+            ID joueur :{' '}
+            <span className="font-mono text-slate-200">{user.id}</span>
+          </p>
+        </section>
+
         {/* Infos du compte + édition profil + mot de passe + sécurité */}
-        <section className="bg-black/30 border border-sky-500/20 rounded-xl p-4 sm:p-5 shadow-[0_0_40px_rgba(56,189,248,0.12)] space-y-4">
-          <h2 className="text-base sm:text-lg md:text-xl font-semibold flex items-center gap-2">
+        <section
+          id="profile-section-edit"
+          className="scroll-mt-28 bg-black/30 border border-sky-500/20 rounded-xl p-4 sm:p-5 shadow-[0_0_40px_rgba(56,189,248,0.12)] space-y-4"
+          aria-labelledby="profile-main-title"
+        >
+          <h1
+            id="profile-main-title"
+            className="text-base sm:text-lg md:text-xl font-semibold flex items-center gap-2"
+          >
             <span className="inline-block h-1 w-6 bg-sky-400 rounded-full" />
             Mon profil
-          </h2>
+          </h1>
 
-          {/* Édition pseudo / email */}
+          {/* Edition pseudo / email */}
           <form
             onSubmit={handleSaveProfile}
             className="space-y-3 text-sm sm:text-base"
+            aria-describedby={
+              profileError
+                ? 'profile-error-message'
+                : profileSuccess
+                  ? 'profile-success-message'
+                  : undefined
+            }
           >
             <div className="flex flex-col gap-1">
-              <label className="text-[11px] sm:text-xs text-slate-400">
+              <label
+                htmlFor="profile-username"
+                className="text-[11px] sm:text-xs text-slate-400"
+              >
                 Pseudo
               </label>
               <input
+                id="profile-username"
                 type="text"
                 value={editUsername}
                 onChange={(e) => setEditUsername(e.target.value)}
                 className="bg-slate-900/70 border border-slate-700 rounded-md px-2 py-1 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                aria-invalid={!!profileError}
               />
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-[11px] sm:text-xs text-slate-400">
+              <label
+                htmlFor="profile-email"
+                className="text-[11px] sm:text-xs text-slate-400"
+              >
                 Email
               </label>
               <input
+                id="profile-email"
                 type="email"
                 value={editEmail}
                 onChange={(e) => setEditEmail(e.target.value)}
                 className="bg-slate-900/70 border border-slate-700 rounded-md px-2 py-1 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                aria-invalid={!!profileError}
               />
+              <p className="text-[10px] sm:text-[11px] text-slate-500 mt-0.5">
+                Cet email est utilisé pour la récupération de compte.
+              </p>
             </div>
 
             <p className="text-[11px] sm:text-xs text-slate-400">
@@ -265,29 +362,41 @@ function ProfilePage({ onLogout }) {
               <span className="font-semibold text-amber-300">
                 {formatRole(user.role)}
               </span>
-              {' · '}Compte créé le :{' '}
+              {' • '}Compte créé le :{' '}
               <span className="font-semibold text-slate-100">
                 {formatDate(user.created_at)}
               </span>
             </p>
 
             {profileError && (
-              <p className="text-[11px] sm:text-xs text-red-400">
+              <p
+                id="profile-error-message"
+                className="text-[11px] sm:text-xs text-red-400"
+                role="alert"
+                aria-live="assertive"
+              >
                 {profileError}
               </p>
             )}
             {profileSuccess && (
-              <p className="text-[11px] sm:text-xs text-emerald-400">
+              <p
+                id="profile-success-message"
+                className="text-[11px] sm:text-xs text-emerald-400"
+                role="status"
+                aria-live="polite"
+              >
                 {profileSuccess}
               </p>
             )}
 
             <button
               type="submit"
-              disabled={profileSaving}
+              disabled={profileSaving || !isProfileDirty}
               className="mt-1 inline-flex items-center rounded-md bg-sky-500/90 hover:bg-sky-400 disabled:opacity-50 disabled:cursor-not-allowed text-slate-900 text-xs sm:text-sm font-semibold px-4 py-2 transition-colors"
             >
-              {profileSaving ? 'Enregistrement...' : 'Enregistrer les modifications'}
+              {profileSaving
+                ? 'Enregistrement...'
+                : 'Enregistrer les modifications'}
             </button>
           </form>
 
@@ -300,50 +409,82 @@ function ProfilePage({ onLogout }) {
             <form
               onSubmit={handleChangePassword}
               className="space-y-2 text-sm sm:text-base"
+              aria-describedby={
+                pwError
+                  ? 'password-error-message'
+                  : pwSuccess
+                    ? 'password-success-message'
+                    : undefined
+              }
             >
               <div className="flex flex-col gap-1">
-                <label className="text-[11px] sm:text-xs text-slate-400">
+                <label
+                  htmlFor="current-password"
+                  className="text-[11px] sm:text-xs text-slate-400"
+                >
                   Mot de passe actuel
                 </label>
                 <input
+                  id="current-password"
                   type="password"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   className="bg-slate-900/70 border border-slate-700 rounded-md px-2 py-1 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                  aria-invalid={!!pwError}
                 />
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-[11px] sm:text-xs text-slate-400">
+                <label
+                  htmlFor="new-password"
+                  className="text-[11px] sm:text-xs text-slate-400"
+                >
                   Nouveau mot de passe
                 </label>
                 <input
+                  id="new-password"
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className="bg-slate-900/70 border border-slate-700 rounded-md px-2 py-1 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                  aria-invalid={!!pwError}
                 />
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-[11px] sm:text-xs text-slate-400">
+                <label
+                  htmlFor="confirm-password"
+                  className="text-[11px] sm:text-xs text-slate-400"
+                >
                   Confirmer le nouveau mot de passe
                 </label>
                 <input
+                  id="confirm-password"
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="bg-slate-900/70 border border-slate-700 rounded-md px-2 py-1 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                  aria-invalid={!!pwError}
                 />
               </div>
 
               {pwError && (
-                <p className="text-[11px] sm:text-xs text-red-400">
+                <p
+                  id="password-error-message"
+                  className="text-[11px] sm:text-xs text-red-400"
+                  role="alert"
+                  aria-live="assertive"
+                >
                   {pwError}
                 </p>
               )}
               {pwSuccess && (
-                <p className="text-[11px] sm:text-xs text-emerald-400">
+                <p
+                  id="password-success-message"
+                  className="text-[11px] sm:text-xs text-emerald-400"
+                  role="status"
+                  aria-live="polite"
+                >
                   {pwSuccess}
                 </p>
               )}
@@ -372,11 +513,15 @@ function ProfilePage({ onLogout }) {
               }}
               className="inline-flex items-center rounded-md bg-red-500/90 hover:bg-red-400 text-slate-900 text-xs sm:text-sm font-semibold px-4 py-2 transition-colors"
             >
-              se déconnecter
+              Déconnecter toutes mes sessions
             </button>
 
             {logoutAllError && (
-              <p className="text-[11px] sm:text-xs text-red-400 mt-1">
+              <p
+                className="text-[11px] sm:text-xs text-red-400 mt-1"
+                role="alert"
+                aria-live="assertive"
+              >
                 {logoutAllError}
               </p>
             )}
@@ -384,8 +529,15 @@ function ProfilePage({ onLogout }) {
         </section>
 
         {/* Badges */}
-        <section className="bg-black/30 border border-amber-500/20 rounded-xl p-4 sm:p-5 shadow-[0_0_40px_rgba(251,191,36,0.12)]">
-          <h2 className="text-base sm:text-lg md:text-xl font-semibold mb-3 flex items-center gap-2">
+        <section
+          id="profile-section-badges"
+          className="scroll-mt-28 bg-black/30 border border-amber-500/20 rounded-xl p-4 sm:p-5 shadow-[0_0_40px_rgba(251,191,36,0.12)]"
+          aria-labelledby="badges-title"
+        >
+          <h2
+            id="badges-title"
+            className="text-base sm:text-lg md:text-xl font-semibold mb-3 flex items-center gap-2"
+          >
             <span className="inline-block h-1 w-6 bg-amber-400 rounded-full" />
             Mes badges
           </h2>
@@ -405,23 +557,52 @@ function ProfilePage({ onLogout }) {
                 </span>
               </p>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-                {obtainedBadges.map((badge) => (
-                  <div
-                    key={badge.id}
-                    className="rounded-lg border border-emerald-400/60 bg-emerald-500/10 px-3 py-2 text-xs sm:text-sm"
-                  >
-                    <p className="font-semibold text-emerald-300">
-                      {badge.name}
-                    </p>
-                    <p className="text-[11px] text-slate-300">
-                      {badge.description}
-                    </p>
-                  </div>
-                ))}
+              <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+                {obtainedBadges.map((badge) => {
+                  const isUltimate =
+                    badge.obtained &&
+                    badge.code &&
+                    badge.code === ULTIMATE_BADGE_CODE;
+
+                  if (isUltimate) {
+                    return (
+                      <li
+                        key={badge.id}
+                        className="col-span-1 sm:col-span-2 md:col-span-3 rounded-xl border border-amber-400/70 bg-slate-900/80 px-4 py-3 flex flex-col items-center text-center"
+                      >
+                        <img
+                          src="/Assets/BADGES/badge_idle.png"
+                          alt={`Badge ultime : ${badge.name}`}
+                          loading="lazy"
+                          className="h-20 sm:h-24 object-contain drop-shadow-[0_0_18px_rgba(251,191,36,0.7)]"
+                        />
+                        <p className="mt-2 text-xs sm:text-sm font-semibold text-amber-200">
+                          {badge.name}
+                        </p>
+                        <p className="text-[11px] text-slate-200">
+                          {badge.description}
+                        </p>
+                      </li>
+                    );
+                  }
+
+                  return (
+                    <li
+                      key={badge.id}
+                      className="rounded-lg border border-emerald-400/60 bg-emerald-500/10 px-3 py-2 text-xs sm:text-sm"
+                    >
+                      <p className="font-semibold text-emerald-300">
+                        {badge.name}
+                      </p>
+                      <p className="text-[11px] text-slate-300">
+                        {badge.description}
+                      </p>
+                    </li>
+                  );
+                })}
 
                 {lockedBadges.map((badge) => (
-                  <div
+                  <li
                     key={badge.id}
                     className="rounded-lg border border-slate-700/60 bg-slate-900/70 px-3 py-2 text-xs sm:text-sm opacity-60"
                   >
@@ -434,9 +615,9 @@ function ProfilePage({ onLogout }) {
                     <p className="text-[10px] text-slate-600 mt-1 italic">
                       Badge non débloqué
                     </p>
-                  </div>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </>
           )}
         </section>
@@ -445,12 +626,25 @@ function ProfilePage({ onLogout }) {
       {/* Modal déconnexion de toutes les sessions */}
       {showLogoutAllModal && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70">
-          <div className="bg-slate-900 border border-red-500/60 rounded-xl p-4 sm:p-6 max-w-md w-full mx-3 shadow-xl">
-            <h2 className="text-lg font-semibold text-red-300 mb-2">
+          <div
+            className="bg-slate-900 border border-red-500/60 rounded-xl p-4 sm:p-6 max-w-md w-full mx-3 shadow-xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="logout-all-title"
+            aria-describedby="logout-all-description"
+          >
+            <h2
+              id="logout-all-title"
+              className="text-lg font-semibold text-red-300 mb-2"
+            >
               Déconnecter toutes les sessions ?
             </h2>
-            <p className="text-sm text-slate-200 mb-4">
-              Cela va déconnecter toutes tes sessions actives (y compris celle-ci).
+            <p
+              id="logout-all-description"
+              className="text-sm text-slate-200 mb-4"
+            >
+              Cela va déconnecter toutes tes sessions actives (y compris
+              celle-ci). Tu devras te reconnecter sur chaque appareil.
             </p>
 
             <div className="flex justify-end gap-2">
@@ -478,6 +672,12 @@ function ProfilePage({ onLogout }) {
 }
 
 export default ProfilePage;
+
+
+
+
+
+
 
 
 

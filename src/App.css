@@ -47,5 +47,8 @@ h1, h2, .font-heading {
   animation: factoryWave 1s linear infinite;
 }
 
+html {
+  scroll-behavior: smooth;
+}
 
 

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { playerService } from '../services/PlayerService';
 import RealmsPanel from '../components/RealmsPanel';
 import ResourcesPanel from '../components/ResourcesPanel';
-import FactoriesPanel from '../components/FactoriesPanel';
+import FactoriesPanel, { computeFactoryCurrentProduction } from '../components/FactoriesPanel';
 import SkillsPanel from '../components/SkillsPanel';
 import EventsPanel from '../components/EventsPanel';
 import Toast from '../components/Toast';
@@ -22,6 +23,11 @@ function GamePage({ onLogout }) {
   const [toast, setToast] = useState(null);
   const [events, setEvents] = useState([]);
   const [idleGainsModal, setIdleGainsModal] = useState(null);
+
+  const navigate = useNavigate();
+  const handleGoHelp = () => {
+    navigate('/help');
+  };
 
   // Chargement initial
   useEffect(() => {
@@ -105,25 +111,39 @@ function GamePage({ onLogout }) {
     setToast({ type: 'error', message });
   };
 
-  const handleUpgradeFactory = async (factoryId) => {
-    if (!factoryId) return;
+  const handleUpgradeFactory = async (factoryId, times = 1) => {
+    if (!factoryId || times <= 0) return;
     setUpgradingFactoryId(factoryId);
 
     try {
-      const res = await playerService.upgradeFactory(factoryId);
-      const data = res.data;
+      let lastData = null;
+
+      for (let i = 0; i < times; i += 1) {
+        const res = await playerService.upgradeFactory(factoryId);
+        lastData = res.data;
+      }
+
       await refreshProfile();
-      showSuccess(data.message || 'Usine améliorée');
+      const data = lastData || {};
+
+      showSuccess(
+        data.message ||
+        (times > 1
+          ? `Usine améliorée (${times} niveaux).`
+          : 'Usine améliorée.')
+      );
+
       pushEvent(
-        `Usine #${factoryId} montée au niveau ${
-          data.newLevel ?? '?'
-        } (coût ${Math.round(data.cost ?? 0).toLocaleString('fr-FR')}).`
+        times > 1
+          ? `Usine #${factoryId} montée au niveau ${data.newLevel ?? '?'
+          } (achat x${times}).`
+          : `Usine #${factoryId} montée au niveau ${data.newLevel ?? '?'}.`
       );
     } catch (err) {
       console.error(err);
       showError(
         err.response?.data?.message ||
-          "Erreur lors de l'amélioration de l'usine"
+        "Erreur lors de l'amélioration de l'usine"
       );
     } finally {
       setUpgradingFactoryId(null);
@@ -170,7 +190,7 @@ function GamePage({ onLogout }) {
       console.error(err);
       showError(
         err.response?.data?.message ||
-          "Erreur lors de l'activation du royaume"
+        "Erreur lors de l'activation du royaume"
       );
     } finally {
       setActivatingRealmId(null);
@@ -187,15 +207,14 @@ function GamePage({ onLogout }) {
       await refreshProfile();
       showSuccess(data.message || 'Compétence améliorée');
       pushEvent(
-        `Compétence #${skillId} montée au niveau ${
-          data.newLevel ?? '?'
+        `Compétence #${skillId} montée au niveau ${data.newLevel ?? '?'
         } (coût ${Math.round(data.cost ?? 0).toLocaleString('fr-FR')}).`
       );
     } catch (err) {
       console.error(err);
       showError(
         err.response?.data?.message ||
-          "Erreur lors de l'amélioration de la compétence"
+        "Erreur lors de l'amélioration de la compétence"
       );
     } finally {
       setUpgradingSkillId(null);
@@ -236,22 +255,21 @@ function GamePage({ onLogout }) {
   const activeRealmId = activeRealm?.realm_id ?? activeRealm?.realmId ?? null;
   const activeRealmCode = activeRealm?.code || 'ASHKAR';
 
-  // Mapping code → HERO HEADER
+  // Mapping code -> HERO HEADER
   const REALM_BACKGROUNDS = {
-  ASHKAR: '/Assets/ROYAUMES/HERO HEADER ASHKAR.png',
-  AQUERUS: '/Assets/ROYAUMES/HERO HEADER AQUERUS.png',
-  ZEPHYRON: '/Assets/ROYAUMES/HERO HEADER ZEPHYRON.png',
-  GLACERYON: '/Assets/ROYAUMES/HERO HEADER GLACERYON.png',
-  FERALIS: '/Assets/ROYAUMES/HERO HEADER FERALIS.png',
-  KHARIM: '/Assets/ROYAUMES/HERO HEADER KHARIM.png',
-  NEBILIS: '/Assets/ROYAUMES/HERO HEADER NEBILIS.png',
-  BERSERIS: '/Assets/ROYAUMES/HERO HEADER BERSERIS.png',
-  MORBUDIS: '/Assets/ROYAUMES/HERO HEADER MORBUDIS.png',
-  ELYNDAR: '/Assets/ROYAUMES/HERO HEADER ELYNDAR.png',
-  DRAKAERYS: '/Assets/ROYAUMES/HERO HEADER DRAKAERYS.png',
-  VERDELANCE: '/Assets/ROYAUMES/HERO HEADER Verdelance.png',
-};
-
+    ASHKAR: '/Assets/ROYAUMES/HERO HEADER ASHKAR.png',
+    AQUERUS: '/Assets/ROYAUMES/HERO HEADER AQUERUS.png',
+    ZEPHYRON: '/Assets/ROYAUMES/HERO HEADER ZEPHYRON.png',
+    GLACERYON: '/Assets/ROYAUMES/HERO HEADER GLACERYON.png',
+    FERALIS: '/Assets/ROYAUMES/HERO HEADER FERALIS.png',
+    KHARIM: '/Assets/ROYAUMES/HERO HEADER KHARIM.png',
+    NEBILIS: '/Assets/ROYAUMES/HERO HEADER NEBILIS.png',
+    BERSERIS: '/Assets/ROYAUMES/HERO HEADER BERSERIS.png',
+    MORBUDIS: '/Assets/ROYAUMES/HERO HEADER MORBUDIS.png',
+    ELYNDAR: '/Assets/ROYAUMES/HERO HEADER ELYNDAR.png',
+    DRAKAERYS: '/Assets/ROYAUMES/HERO HEADER DRAKAERYS.png',
+    VERDELANCE: '/Assets/ROYAUMES/HERO HEADER Verdelance.png',
+  };
 
   const realmBackground = REALM_BACKGROUNDS[activeRealmCode] || null;
 
@@ -305,6 +323,24 @@ function GamePage({ onLogout }) {
 
   const lockedResourceId = nextLockedRealm ? nextLockedRealm.realm_id : null;
 
+  const productionByResourceId = (() => {
+    if (!factories || !skills) return {};
+
+    const map = {};
+
+    factories.forEach((f) => {
+      const prod = computeFactoryCurrentProduction(f, skills);
+      if (!Number.isFinite(prod) || prod <= 0) return;
+
+      const resId = f.resource_id;
+      if (resId == null) return;
+
+      map[resId] = (map[resId] || 0) + prod;
+    });
+
+    return map;
+  })();
+
   // Ressources affichées (royaumes débloqués + ressource principale du prochain)
   const displayResources =
     resources?.filter((r) => {
@@ -345,6 +381,14 @@ function GamePage({ onLogout }) {
 
   return (
     <div className="min-h-screen text-slate-100 relative overflow-hidden">
+      <button
+        type="button"
+        onClick={handleGoHelp}
+        className="fixed top-3 right-3 z-40 rounded-full bg-slate-900/80 border border-amber-400/70 text-amber-200 w-8 h-8 flex items-center justify-center text-sm font-bold shadow-lg hover:bg-amber-500/90 hover:text-slate-900 transition-colors"
+        aria-label="Ouvrir la page d'aide"
+      >
+        ?
+      </button>
       {realmBackground && (
         <img
           src={realmBackground}
@@ -408,6 +452,7 @@ function GamePage({ onLogout }) {
         <ResourcesPanel
           resources={displayResources}
           lockedResourceId={lockedResourceId}
+          productionByResource={productionByResourceId}
         />
 
         <div className="grid gap-4 sm:gap-6 md:grid-cols-2 md:gap-8">
@@ -432,4 +477,5 @@ function GamePage({ onLogout }) {
 }
 
 export default GamePage;
+
 

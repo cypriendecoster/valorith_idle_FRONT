@@ -5,6 +5,13 @@ import AuthPage from './pages/AuthPage';
 import GamePage from './pages/GamePage';
 import ProfilePage from './pages/ProfilePage'; // 👉 ajout
 import { authService } from './services/AuthService';
+import HomePage from './pages/HomePage';
+import AboutPage from './pages/AboutPage';
+import HelpPage from './pages/HelpPage';
+import ContactPage from './pages/ContactPage';
+import LeaderboardPage from './pages/LeaderboardPage';
+import LegalPage from './pages/LegalPage';
+import StatusPage from './pages/StatusPage';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(
@@ -25,6 +32,31 @@ function App() {
 
   return (
     <Routes>
+      {/* Page d'accueil publique */}
+      <Route
+        path="/"
+        element={<HomePage isAuthenticated={isAuthenticated} />}
+      />
+
+      {/* À propos / Lore (publique) */}
+      <Route path="/about" element={<AboutPage />} />
+
+      {/* Aide / FAQ (publique) */}
+      <Route path="/help" element={<HelpPage />} />
+
+      {/* Contact / Support (publique) */}
+      <Route path="/contact" element={<ContactPage />} />
+
+      {/* Classement (publique) */}
+      <Route path="/classement" element={<LeaderboardPage />} />
+
+      {/* Légal (publique) */}
+      <Route path="/legal" element={<LegalPage />} />
+
+      {/* Statut (publique) */}
+      <Route path="/status" element={<StatusPage />} />
+      
+      {/* Auth */}
       <Route
         path="/login"
         element={
@@ -35,6 +67,8 @@ function App() {
           )
         }
       />
+
+      {/* Jeu (protégé) */}
       <Route
         path="/game"
         element={
@@ -45,7 +79,8 @@ function App() {
           )
         }
       />
-      {/* 👉 nouvelle route profil */}
+
+      {/* Profil (protégé) */}
       <Route
         path="/profile"
         element={
@@ -56,26 +91,14 @@ function App() {
           )
         }
       />
-      {/* Redirections par défaut */}
-      <Route
-        path="/"
-        element={
-          <Navigate to={isAuthenticated ? '/game' : '/login'} replace />
-        }
-      />
-      <Route
-        path="*"
-        element={
-          <Navigate to={isAuthenticated ? '/game' : '/login'} replace />
-        }
-      />
+
+      {/* Fallback → page d'accueil */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
+
 }
 
 export default App;
-
-
-
 
 

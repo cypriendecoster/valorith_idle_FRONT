@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatAmount } from '../utils/formatNumber';
 
 function RealmsPanel({
   realms,
@@ -16,23 +17,22 @@ function RealmsPanel({
     realms?.find((r) => r.is_default_unlocked) ||
     null;
 
-  // Ressources connues
-  const charcoal = resources?.find((r) => r.code === 'CHARBON_GUERRE');
-  const essence = resources?.find((r) => r.code === 'ESSENCE_ABYSSALE');
+  // Ressource principale du royaume actif :
+  // on suit la convention resource_id === realm_id
+  let mainResourceLabel = null;
+  let mainResourceAmountRaw = 0;
 
-  const charcoalAmount = Number(charcoal?.amount ?? 0);
-  const essenceAmount = Number(essence?.amount ?? 0);
+  if (activeRealm && Array.isArray(resources)) {
+    const realmResource = resources.find(
+      (r) => Number(r.resource_id) === Number(activeRealm.realm_id)
+    );
 
-  // Si Aquerus est actif, on affiche Essence Abyssale, sinon Charbon
-  const isAquerusActive = activeRealm?.code === 'AQUERUS';
-
-  const mainResourceLabel = isAquerusActive
-    ? 'Essence Abyssale'
-    : 'Charbon de guerre';
-
-  const mainResourceAmount = isAquerusActive
-    ? essenceAmount
-    : charcoalAmount;
+    if (realmResource) {
+      mainResourceLabel =
+        realmResource.name || realmResource.code || 'Ressource';
+      mainResourceAmountRaw = realmResource.amount ?? 0;
+    }
+  }
 
   // Ne montrer qu'un seul royaume verrouillé à la fois :
   // le prochain dans l'ordre, plus tous les royaumes déjà débloqués (ou gratuits).
@@ -57,12 +57,14 @@ function RealmsPanel({
         Royaumes
       </h2>
 
-      <p className="text-[11px] sm:text-xs text-slate-400 mb-3">
-        {mainResourceLabel} :{' '}
-        <span className="font-mono text-amber-300">
-          {mainResourceAmount.toLocaleString('fr-FR')}
-        </span>
-      </p>
+      {mainResourceLabel && (
+        <p className="text-[11px] sm:text-xs text-slate-400 mb-3">
+          {mainResourceLabel} :{' '}
+          <span className="font-mono text-amber-300">
+            {formatAmount(mainResourceAmountRaw)}
+          </span>
+        </p>
+      )}
 
       <ul className="space-y-2 text-xs sm:text-sm">
         {visibleRealms.map((realm) => {
@@ -113,7 +115,7 @@ function RealmsPanel({
               {isLocked && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <span className="text-5xl sm:text-6xl text-slate-200/80 drop-shadow-lg">
-                   🔒
+                    🔒
                   </span>
                 </div>
               )}
@@ -148,13 +150,13 @@ function RealmsPanel({
                               canPay ? 'text-emerald-300' : 'text-red-400'
                             }
                           >
-                            {Number(cost.amount || 0).toLocaleString('fr-FR')}{' '}
+                            {formatAmount(cost.amount)}{' '}
                             {res?.name ||
                               cost.resourceName ||
                               cost.resourceCode}
                           </span>{' '}
                           <span className="text-slate-500">
-                            ({playerAmount.toLocaleString('fr-FR')} dispo)
+                            ({formatAmount(res?.amount ?? playerAmount)} dispo)
                           </span>
                         </p>
                       )
