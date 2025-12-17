@@ -19,6 +19,7 @@ function GameHeader({ user, stats, onLogout, onGoToSection }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const isProfilePage = typeof onGoToSection === 'function';
+  const isAdmin = user?.role === 'ADMIN';
 
   const handleGoToProfile = () => {
     navigate('/profile');
@@ -42,6 +43,11 @@ function GameHeader({ user, stats, onLogout, onGoToSection }) {
 
   const handleGoLeaderboard = () => {
     navigate('/classement');
+    setIsMenuOpen(false);
+  };
+
+  const handleGoAdmin = () => {
+    navigate('/admin');
     setIsMenuOpen(false);
   };
 
@@ -141,6 +147,16 @@ function GameHeader({ user, stats, onLogout, onGoToSection }) {
               Classement
             </button>
 
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={handleGoAdmin}
+                className="px-3 py-1 rounded-md border border-slate-700 text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
+              >
+                Admin
+              </button>
+            )}
+
             {isProfilePage && (
               <>
                 <button
@@ -208,6 +224,16 @@ function GameHeader({ user, stats, onLogout, onGoToSection }) {
               Classement
             </button>
 
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={handleGoAdmin}
+                className="w-full text-left px-2 py-1.5 rounded-md hover:bg-slate-800/80"
+              >
+                Admin
+              </button>
+            )}
+
             {isProfilePage ? (
               <>
                 <button
@@ -272,5 +298,3 @@ function GameHeader({ user, stats, onLogout, onGoToSection }) {
 }
 
 export default GameHeader;
-
-

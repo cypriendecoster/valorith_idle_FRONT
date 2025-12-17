@@ -1,10 +1,13 @@
 // Client/src/pages/HomePage.jsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authService } from '../services/AuthService';
 
 function HomePage({ isAuthenticated }) {
     const navigate = useNavigate();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const currentUser = authService.getCurrentUser();
+    const isAdmin = !!currentUser && currentUser.role === 'ADMIN';
 
     const scrollToSection = (id) => {
         const el = document.getElementById(id);
@@ -70,6 +73,20 @@ function HomePage({ isAuthenticated }) {
                             >
                                 Classement
                             </button>
+                            <button
+                                onClick={() => handleNavTo('/patchnotes')}
+                                className="hover:text-amber-300 transition-colors"
+                            >
+                                Patchnotes
+                            </button>
+                            {isAuthenticated && isAdmin && (
+                                <button
+                                    onClick={() => handleNavTo('/admin')}
+                                    className="hover:text-amber-300 transition-colors"
+                                >
+                                    Admin
+                                </button>
+                            )}
                             <button
                                 onClick={() => handleNavTo('/about')}
                                 className="hover:text-amber-300 transition-colors"
@@ -147,6 +164,20 @@ function HomePage({ isAuthenticated }) {
                                 >
                                     Classement
                                 </button>
+                                <button
+                                    onClick={() => handleNavTo('/patchnotes')}
+                                    className="text-left hover:text-amber-300 transition-colors"
+                                >
+                                    Patchnotes
+                                </button>
+                                {isAuthenticated && isAdmin && (
+                                    <button
+                                        onClick={() => handleNavTo('/admin')}
+                                        className="text-left hover:text-amber-300 transition-colors"
+                                    >
+                                        Admin
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => handleNavTo('/about')}
                                     className="text-left hover:text-amber-300 transition-colors"
@@ -646,6 +677,22 @@ function HomePage({ isAuthenticated }) {
                         >
                             Aide / FAQ
                         </button>
+                        <button
+                            type="button"
+                            onClick={() => handleNavTo('/patchnotes')}
+                            className="hover:text-amber-300 transition-colors"
+                        >
+                            Patchnotes
+                        </button>
+                        {isAuthenticated && isAdmin && (
+                            <button
+                                type="button"
+                                onClick={() => handleNavTo('/admin')}
+                                className="hover:text-amber-300 transition-colors"
+                            >
+                                Admin
+                            </button>
+                        )}
                         <button
                             type="button"
                             onClick={() => handleNavTo('/about')}

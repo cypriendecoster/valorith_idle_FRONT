@@ -12,12 +12,16 @@ import ContactPage from './pages/ContactPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import LegalPage from './pages/LegalPage';
 import StatusPage from './pages/StatusPage';
+import PatchnotesPage from './pages/PatchnotesPage';
+import AdminPage from './pages/AdminPage';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(
     !!localStorage.getItem('authToken')
   );
   const navigate = useNavigate();
+  const currentUser = authService.getCurrentUser();
+  const isAdmin = !!currentUser && currentUser.role === 'ADMIN';
 
   const handleAuthSuccess = () => {
     setIsAuthenticated(true);
@@ -55,6 +59,24 @@ function App() {
 
       {/* Statut (publique) */}
       <Route path="/status" element={<StatusPage />} />
+
+      {/* Patchnotes / MAJ (publique) */}
+      <Route path="/patchnotes" element={<PatchnotesPage />} />
+      <Route path="/maj" element={<Navigate to="/patchnotes" replace />} />
+
+      {/* Admin (protégé + admin) */}
+      <Route
+        path="/admin"
+        element={
+          isAuthenticated && isAdmin ? (
+            <AdminPage />
+          ) : isAuthenticated ? (
+            <Navigate to="/game" replace />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
       
       {/* Auth */}
       <Route
@@ -100,5 +122,3 @@ function App() {
 }
 
 export default App;
-
-
