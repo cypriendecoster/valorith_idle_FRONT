@@ -381,14 +381,6 @@ function GamePage({ onLogout }) {
 
   return (
     <div className="min-h-screen text-slate-100 relative overflow-hidden">
-      <button
-        type="button"
-        onClick={handleGoHelp}
-        className="fixed top-3 right-3 z-40 rounded-full bg-slate-900/80 border border-amber-400/70 text-amber-200 w-8 h-8 flex items-center justify-center text-sm font-bold shadow-lg hover:bg-amber-500/90 hover:text-slate-900 transition-colors"
-        aria-label="Ouvrir la page d'aide"
-      >
-        ?
-      </button>
       {realmBackground && (
         <img
           src={realmBackground}
@@ -437,7 +429,12 @@ function GamePage({ onLogout }) {
         </div>
       )}
 
-      <GameHeader user={user} stats={headerStats} onLogout={onLogout} />
+      <GameHeader
+        user={user}
+        stats={headerStats}
+        onLogout={onLogout}
+        onHelp={handleGoHelp}
+      />
 
       <main className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-10 space-y-4 sm:space-y-6 md:space-y-8">
         <RealmsPanel

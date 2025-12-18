@@ -14,7 +14,7 @@ function formatPlayTime(seconds) {
   return `${minutes}m`;
 }
 
-function GameHeader({ user, stats, onLogout, onGoToSection }) {
+function GameHeader({ user, stats, onLogout, onGoToSection, onHelp }) {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -71,32 +71,45 @@ function GameHeader({ user, stats, onLogout, onGoToSection }) {
             </p>
           </div>
 
-          {/* Burger mobile */}
-          <button
-            type="button"
-            className="md:hidden inline-flex items-center justify-center p-2 rounded-md border border-slate-700 text-slate-200 hover:bg-slate-800/80 transition-colors"
-            aria-label="Ouvrir le menu du joueur"
-            aria-expanded={isMenuOpen}
-            onClick={() => setIsMenuOpen((v) => !v)}
-          >
-            <div className="space-y-[3px]">
-              <span
-                className={`block h-0.5 w-5 bg-current transition-transform ${
-                  isMenuOpen ? 'translate-y-[5px] rotate-45' : ''
-                }`}
-              />
-              <span
-                className={`block h-0.5 w-5 bg-current transition-opacity ${
-                  isMenuOpen ? 'opacity-0' : 'opacity-100'
-                }`}
-              />
-              <span
-                className={`block h-0.5 w-5 bg-current transition-transform ${
-                  isMenuOpen ? '-translate-y-[5px] -rotate-45' : ''
-                }`}
-              />
-            </div>
-          </button>
+          <div className="flex items-center gap-2 md:hidden">
+            {typeof onHelp === 'function' && (
+              <button
+                type="button"
+                onClick={onHelp}
+                className="inline-flex items-center justify-center shrink-0 w-10 h-10 rounded-md bg-slate-900/80 border border-amber-400/70 text-amber-200 text-sm font-bold shadow-lg hover:bg-amber-500/90 hover:text-slate-900 transition-colors"
+                aria-label="Ouvrir la page d'aide"
+              >
+                ?
+              </button>
+            )}
+
+            {/* Burger mobile */}
+            <button
+              type="button"
+              className="inline-flex items-center justify-center p-2 w-10 h-10 rounded-md border border-slate-700 text-slate-200 hover:bg-slate-800/80 transition-colors"
+              aria-label="Ouvrir le menu du joueur"
+              aria-expanded={isMenuOpen}
+              onClick={() => setIsMenuOpen((v) => !v)}
+            >
+              <div className="space-y-[3px]">
+                <span
+                  className={`block h-0.5 w-5 bg-current transition-transform ${
+                    isMenuOpen ? 'translate-y-[5px] rotate-45' : ''
+                  }`}
+                />
+                <span
+                  className={`block h-0.5 w-5 bg-current transition-opacity ${
+                    isMenuOpen ? 'opacity-0' : 'opacity-100'
+                  }`}
+                />
+                <span
+                  className={`block h-0.5 w-5 bg-current transition-transform ${
+                    isMenuOpen ? '-translate-y-[5px] -rotate-45' : ''
+                  }`}
+                />
+              </div>
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-col items-stretch sm:flex-row sm:items-center gap-2 sm:gap-4">
@@ -200,6 +213,16 @@ function GameHeader({ user, stats, onLogout, onGoToSection }) {
             >
               Déconnexion
             </button>
+
+            {typeof onHelp === 'function' && (
+              <button
+                type="button"
+                onClick={onHelp}
+                className="hidden md:inline-flex px-3 py-1 rounded-md border border-amber-400/60 text-amber-200 hover:bg-amber-500/10 hover:border-amber-400 transition-colors whitespace-nowrap"
+              >
+                Aide
+              </button>
+            )}
           </div>
         </div>
       </div>

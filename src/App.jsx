@@ -14,6 +14,8 @@ import LegalPage from './pages/LegalPage';
 import StatusPage from './pages/StatusPage';
 import PatchnotesPage from './pages/PatchnotesPage';
 import AdminPage from './pages/AdminPage';
+import NotFoundPage from './pages/NotFoundPage';
+import MaintenancePage from './pages/MaintenancePage';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(
@@ -63,6 +65,8 @@ function App() {
       {/* Patchnotes / MAJ (publique) */}
       <Route path="/patchnotes" element={<PatchnotesPage />} />
       <Route path="/maj" element={<Navigate to="/patchnotes" replace />} />
+
+      <Route path="/maintenance" element={<MaintenancePage />} />
 
       {/* Admin (protégé + admin) */}
       <Route
@@ -115,7 +119,8 @@ function App() {
       />
 
       {/* Fallback → page d'accueil */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="/404" element={<NotFoundPage />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 

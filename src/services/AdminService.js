@@ -53,10 +53,13 @@ export const adminService = {
     return api.delete(`/api/admin/skills/${id}`);
   },
 
-  getPlayers({ search = '', limit = 50 } = {}) {
+  getPlayers({ search = '', limit = 50, offset = 0, sortBy = '', sortDir = '' } = {}) {
     const params = new URLSearchParams();
     if (search) params.set('search', String(search));
     if (limit != null) params.set('limit', String(limit));
+    if (offset != null) params.set('offset', String(offset));
+    if (sortBy) params.set('sortBy', String(sortBy));
+    if (sortDir) params.set('sortDir', String(sortDir));
     return api.get(`/api/admin/players?${params.toString()}`);
   },
   getPlayerResources(userId) {
@@ -101,12 +104,21 @@ export const adminService = {
   },
 
   // Support & Logs
-  getSupportTickets({ status = '', search = '', limit = 100, offset = 0 } = {}) {
+  getSupportTickets({
+    status = '',
+    search = '',
+    category = '',
+    limit = 100,
+    offset = 0,
+    sortDir = '',
+  } = {}) {
     const params = new URLSearchParams();
     if (status) params.set('status', String(status));
     if (search) params.set('search', String(search));
+    if (category) params.set('category', String(category));
     if (limit != null) params.set('limit', String(limit));
     if (offset != null) params.set('offset', String(offset));
+    if (sortDir) params.set('sortDir', String(sortDir));
     const qs = params.toString();
     return api.get(`/api/admin/support/tickets${qs ? `?${qs}` : ''}`);
   },
@@ -119,6 +131,7 @@ export const adminService = {
     actionType = '',
     targetTable = '',
     userId = '',
+    sortDir = '',
   } = {}) {
     const params = new URLSearchParams();
     if (limit != null) params.set('limit', String(limit));
@@ -126,8 +139,21 @@ export const adminService = {
     if (actionType) params.set('actionType', String(actionType));
     if (targetTable) params.set('targetTable', String(targetTable));
     if (userId) params.set('userId', String(userId));
+    if (sortDir) params.set('sortDir', String(sortDir));
     const qs = params.toString();
     return api.get(`/api/admin/logs${qs ? `?${qs}` : ''}`);
+  },
+
+  // System (maintenance)
+  getMaintenance() {
+    return api.get('/api/admin/system/maintenance');
+  },
+  setMaintenance({ enabled, message = null, retryAfterSeconds = null } = {}) {
+    return api.put('/api/admin/system/maintenance', {
+      enabled,
+      message,
+      retryAfterSeconds,
+    });
   },
 
   // Endgame (read-only pour l'instant)

@@ -21,6 +21,19 @@ api.interceptors.response.use(
   (error) => {
     const status = error?.response?.status;
 
+    if (status === 503 && error?.response?.data?.maintenance) {
+      const isAlreadyOnMaintenance = window.location.pathname === '/maintenance';
+      if (!isAlreadyOnMaintenance) {
+        try {
+          const current = `${window.location.pathname}${window.location.search}`;
+          sessionStorage.setItem('postMaintenanceRedirect', current);
+        } catch {
+          // ignore
+        }
+        window.location.href = '/maintenance';
+      }
+    }
+
     if (status === 401) {
       localStorage.removeItem('authToken');
       localStorage.removeItem('authUser');

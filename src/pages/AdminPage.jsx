@@ -1,6 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import Toast from '../components/Toast';
+import ActionMenu from '../components/ui/ActionMenu';
+import A11yDetails from '../components/ui/A11yDetails';
+import A11yDetailsWrap from '../components/ui/A11yDetailsWrap';
+import ConfirmModal from '../components/ui/ConfirmModal';
+import CopyButton from '../components/ui/CopyButton';
+import Badge from '../components/ui/Badge';
+import KeyValueRow from '../components/ui/KeyValueRow';
+import PaginationControls from '../components/ui/PaginationControls';
+import SkeletonCards from '../components/ui/SkeletonCards';
+import SkeletonTable from '../components/ui/SkeletonTable';
+import StatusBadge from '../components/ui/StatusBadge';
 import { adminService } from '../services/AdminService';
 import { authService } from '../services/AuthService';
 
@@ -13,6 +24,13 @@ function toNumberOrNull(value) {
   if (!trimmed) return null;
   const n = Number(trimmed);
   return Number.isFinite(n) ? n : null;
+}
+
+function toNonNegativeIntOrNull(value) {
+  const n = toNumberOrNull(value);
+  if (n == null) return null;
+  if (n < 0) return null;
+  return Math.floor(n);
 }
 
 function toBooleanInt(value) {
@@ -30,8 +48,79 @@ function formatDurationSeconds(value) {
   return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
 }
 
+function clampInt(value, { min = 0, max = Number.MAX_SAFE_INTEGER } = {}) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return min;
+  const i = Math.trunc(n);
+  return Math.min(max, Math.max(min, i));
+}
+
+function normalizeSortDir(value, fallback = 'DESC') {
+  const dir = String(value ?? '').trim().toUpperCase();
+  return dir === 'ASC' || dir === 'DESC' ? dir : fallback;
+}
+
+function parseBigIntLoose(value) {
+  if (value == null) return null;
+  if (typeof value === 'bigint') return value;
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) return null;
+    return BigInt(Math.trunc(value));
+  }
+  const raw = String(value).trim();
+  if (!raw) return null;
+  const sign = raw.startsWith('-') ? '-' : '';
+  const digitsOnly = raw.replace(/[^\d]/g, '');
+  if (!digitsOnly) return null;
+  try {
+    return BigInt(`${sign}${digitsOnly}`);
+  } catch {
+    return null;
+  }
+}
+
+function formatIntegerFull(value, locale = 'fr-FR') {
+  const n = parseBigIntLoose(value);
+  if (n == null) return String(value ?? '-');
+  try {
+    return new Intl.NumberFormat(locale).format(n);
+  } catch {
+    return n.toString();
+  }
+}
+
+function formatIntegerCompact(value, locale = 'fr-FR') {
+  const n = parseBigIntLoose(value);
+  if (n == null) return '-';
+  const sign = n < 0n ? '-' : '';
+  const abs = n < 0n ? -n : n;
+  const thousand = 1000n;
+  const units = ['', 'k', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No'];
+  let unitIndex = 0;
+  let div = 1n;
+  while (unitIndex < units.length - 1 && abs >= div * thousand) {
+    div *= thousand;
+    unitIndex += 1;
+  }
+  if (unitIndex === 0) return formatIntegerFull(abs, locale);
+
+  const scaledTimes10 = (abs * 10n) / div;
+  const whole = scaledTimes10 / 10n;
+  const dec = scaledTimes10 % 10n;
+  const decSep = locale.startsWith('fr') ? ',' : '.';
+  const wholeStr = formatIntegerFull(whole, locale);
+  const decStr = dec === 0n ? '' : `${decSep}${dec.toString()}`;
+  return `${sign}${wholeStr}${decStr}${units[unitIndex]}`;
+}
+
 function AdminPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchParamsKey = searchParams.toString();
+  const lastSyncedParamsKeyRef = useRef('');
+  const ignoreNextUrlSyncRef = useRef(false);
+  const [urlHydrated, setUrlHydrated] = useState(false);
+
   const currentUser = authService.getCurrentUser();
   const isAdmin = currentUser?.role === 'ADMIN';
 
@@ -49,8 +138,14 @@ function AdminPage() {
   const [realmUnlockCosts, setRealmUnlockCosts] = useState([]);
 
   const [players, setPlayers] = useState([]);
+  const [playersTotal, setPlayersTotal] = useState(0);
   const [playersLoading, setPlayersLoading] = useState(false);
   const [playersPrefetched, setPlayersPrefetched] = useState(false);
+  const [playersPage, setPlayersPage] = useState(0);
+  const [playersLimit, setPlayersLimit] = useState(50);
+  const [playersSortBy, setPlayersSortBy] = useState('id');
+  const [playersSortDir, setPlayersSortDir] = useState('DESC');
+  const [playersSearch, setPlayersSearch] = useState('');
   const [selectedPlayerId, setSelectedPlayerId] = useState(null);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [selectedPlayerResources, setSelectedPlayerResources] = useState([]);
@@ -77,18 +172,32 @@ function AdminPage() {
 
   const [supportStatus, setSupportStatus] = useState('OPEN');
   const [supportSearch, setSupportSearch] = useState('');
+  const [supportCategory, setSupportCategory] = useState('');
   const [supportTickets, setSupportTickets] = useState([]);
   const [supportTicketsTotal, setSupportTicketsTotal] = useState(0);
   const [supportTicketsLoading, setSupportTicketsLoading] = useState(false);
   const [selectedTicketId, setSelectedTicketId] = useState(null);
+  const [supportPage, setSupportPage] = useState(0);
+  const [supportLimit, setSupportLimit] = useState(200);
+  const [supportSortDir, setSupportSortDir] = useState('DESC');
 
   const [logs, setLogs] = useState([]);
   const [logsTotal, setLogsTotal] = useState(0);
   const [logsLoading, setLogsLoading] = useState(false);
+  const [logsPrefetched, setLogsPrefetched] = useState(false);
   const [logsSearch, setLogsSearch] = useState('');
   const [logsActionType, setLogsActionType] = useState('');
   const [logsTargetTable, setLogsTargetTable] = useState('');
   const [logsUserId, setLogsUserId] = useState('');
+  const [logsPage, setLogsPage] = useState(0);
+  const [logsLimit, setLogsLimit] = useState(200);
+  const [logsSortDir, setLogsSortDir] = useState('DESC');
+
+  const [maintenanceLoading, setMaintenanceLoading] = useState(false);
+  const [maintenanceSaving, setMaintenanceSaving] = useState(false);
+  const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
+  const [maintenanceMessage, setMaintenanceMessage] = useState('');
+  const [maintenanceRetryAfter, setMaintenanceRetryAfter] = useState('');
 
   const [endgameRequirements, setEndgameRequirements] = useState([]);
   const [endgameRankings, setEndgameRankings] = useState([]);
@@ -104,12 +213,261 @@ function AdminPage() {
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [confirmError, setConfirmError] = useState('');
   const [confirmAction, setConfirmAction] = useState(null);
+  const [confirmDetails, setConfirmDetails] = useState(null);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    if (ignoreNextUrlSyncRef.current) {
+      ignoreNextUrlSyncRef.current = false;
+      lastSyncedParamsKeyRef.current = searchParamsKey;
+      setUrlHydrated(true);
+      return;
+    }
+
+    setUrlHydrated(true);
+    if (searchParamsKey === lastSyncedParamsKeyRef.current) return;
+
+    const nextTab = String(searchParams.get('tab') || '').trim();
+    const allowedTabs = new Set([
+      'realms',
+      'realm_unlock_costs',
+      'resources',
+      'factories',
+      'skills',
+      'players',
+      'support',
+      'endgame',
+    ]);
+
+    if (nextTab && allowedTabs.has(nextTab)) {
+      setActiveTab(nextTab);
+    }
+
+    const nextSearch = searchParams.get('q');
+    if (nextSearch != null) setSearch(nextSearch);
+
+    const nextPlayersSearch = searchParams.get('pQ');
+    if (nextPlayersSearch != null) setPlayersSearch(nextPlayersSearch);
+    else if (nextSearch != null && nextTab === 'players') setPlayersSearch(nextSearch);
+
+    const nextPlayersPage = searchParams.get('pPage');
+    if (nextPlayersPage != null) setPlayersPage(clampInt(nextPlayersPage, { min: 0 }));
+    const nextPlayersLimit = searchParams.get('pLimit');
+    if (nextPlayersLimit != null)
+      setPlayersLimit(clampInt(nextPlayersLimit, { min: 1, max: 200 }));
+    const nextPlayersSortBy = searchParams.get('pSortBy');
+    if (nextPlayersSortBy != null) setPlayersSortBy(nextPlayersSortBy || 'id');
+    const nextPlayersSortDir = searchParams.get('pSortDir');
+    if (nextPlayersSortDir != null)
+      setPlayersSortDir(normalizeSortDir(nextPlayersSortDir, 'DESC'));
+
+    const nextSupportTab = searchParams.get('sTab');
+    if (nextSupportTab === 'tickets' || nextSupportTab === 'logs') {
+      setSupportTab(nextSupportTab);
+    }
+    const nextSupportStatus = searchParams.get('sStatus');
+    if (nextSupportStatus != null) setSupportStatus(nextSupportStatus);
+    const nextSupportSearch = searchParams.get('sQ');
+    if (nextSupportSearch != null) setSupportSearch(nextSupportSearch);
+    const nextSupportCategory = searchParams.get('sCat');
+    if (nextSupportCategory != null) setSupportCategory(nextSupportCategory);
+    const nextSupportPage = searchParams.get('sPage');
+    if (nextSupportPage != null) setSupportPage(clampInt(nextSupportPage, { min: 0 }));
+    const nextSupportLimit = searchParams.get('sLimit');
+    if (nextSupportLimit != null)
+      setSupportLimit(clampInt(nextSupportLimit, { min: 1, max: 500 }));
+    const nextSupportSortDir = searchParams.get('sSortDir');
+    if (nextSupportSortDir != null)
+      setSupportSortDir(normalizeSortDir(nextSupportSortDir, 'DESC'));
+
+    const nextLogsActionType = searchParams.get('lActionType');
+    if (nextLogsActionType != null) setLogsActionType(nextLogsActionType);
+    const nextLogsTargetTable = searchParams.get('lTargetTable');
+    if (nextLogsTargetTable != null) setLogsTargetTable(nextLogsTargetTable);
+    const nextLogsUserId = searchParams.get('lUserId');
+    if (nextLogsUserId != null) setLogsUserId(nextLogsUserId);
+    const nextLogsPage = searchParams.get('lPage');
+    if (nextLogsPage != null) setLogsPage(clampInt(nextLogsPage, { min: 0 }));
+    const nextLogsLimit = searchParams.get('lLimit');
+    if (nextLogsLimit != null)
+      setLogsLimit(clampInt(nextLogsLimit, { min: 1, max: 500 }));
+    const nextLogsSortDir = searchParams.get('lSortDir');
+    if (nextLogsSortDir != null) setLogsSortDir(normalizeSortDir(nextLogsSortDir, 'DESC'));
+
+    const nextLogsLocalSearch = searchParams.get('lQ');
+    if (nextLogsLocalSearch != null) setLogsSearch(nextLogsLocalSearch);
+
+    setLogsPrefetched(false);
+
+    const nextEndgameTab = searchParams.get('eTab');
+    if (nextEndgameTab === 'requirements' || nextEndgameTab === 'rankings') {
+      setEndgameTab(nextEndgameTab);
+    }
+
+    lastSyncedParamsKeyRef.current = searchParamsKey;
+    setUrlHydrated(true);
+  }, [isAdmin, searchParams, searchParamsKey]);
 
   useEffect(() => {
     if (!toast) return;
     const id = setTimeout(() => setToast(null), 3500);
     return () => clearTimeout(id);
   }, [toast]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    if (!urlHydrated) return;
+
+    const next = new URLSearchParams();
+    next.set('tab', activeTab);
+
+    if (activeTab !== 'players' && normalizeText(search)) next.set('q', search);
+    if (activeTab === 'players' && normalizeText(playersSearch)) next.set('pQ', playersSearch);
+
+    if (playersPage) next.set('pPage', String(playersPage));
+    if (playersLimit !== 50) next.set('pLimit', String(playersLimit));
+    if (playersSortBy !== 'id') next.set('pSortBy', String(playersSortBy));
+    if (playersSortDir !== 'DESC') next.set('pSortDir', String(playersSortDir));
+
+    if (activeTab === 'players' && selectedPlayerId) {
+      next.set('playerId', String(selectedPlayerId));
+    }
+
+    if (supportTab !== 'tickets') next.set('sTab', supportTab);
+    if (supportStatus !== 'OPEN') next.set('sStatus', supportStatus);
+    if (normalizeText(supportSearch)) next.set('sQ', supportSearch);
+    if (normalizeText(supportCategory)) next.set('sCat', supportCategory);
+    if (supportPage) next.set('sPage', String(supportPage));
+    if (supportLimit !== 200) next.set('sLimit', String(supportLimit));
+    if (supportSortDir !== 'DESC') next.set('sSortDir', String(supportSortDir));
+
+    if (activeTab === 'support' && supportTab === 'tickets' && selectedTicketId) {
+      next.set('ticketId', String(selectedTicketId));
+    }
+
+    if (normalizeText(logsSearch)) next.set('lQ', logsSearch);
+    if (normalizeText(logsActionType)) next.set('lActionType', logsActionType);
+    if (normalizeText(logsTargetTable)) next.set('lTargetTable', logsTargetTable);
+    if (normalizeText(logsUserId)) next.set('lUserId', logsUserId);
+    if (logsPage) next.set('lPage', String(logsPage));
+    if (logsLimit !== 200) next.set('lLimit', String(logsLimit));
+    if (logsSortDir !== 'DESC') next.set('lSortDir', String(logsSortDir));
+
+    if (endgameTab !== 'requirements') next.set('eTab', endgameTab);
+
+    const nextKey = next.toString();
+    if (nextKey === searchParamsKey) return;
+
+    ignoreNextUrlSyncRef.current = true;
+    lastSyncedParamsKeyRef.current = nextKey;
+    setSearchParams(next, { replace: true });
+  }, [
+    isAdmin,
+    urlHydrated,
+    activeTab,
+    search,
+    playersSearch,
+    playersPage,
+    playersLimit,
+    playersSortBy,
+    playersSortDir,
+    selectedPlayerId,
+    supportTab,
+    supportStatus,
+    supportSearch,
+    supportCategory,
+    supportPage,
+    supportLimit,
+    supportSortDir,
+    selectedTicketId,
+    logsSearch,
+    logsActionType,
+    logsTargetTable,
+    logsUserId,
+    logsPage,
+    logsLimit,
+    logsSortDir,
+    endgameTab,
+    searchParamsKey,
+    setSearchParams,
+  ]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    if (activeTab !== 'support') return;
+
+    let cancelled = false;
+    setMaintenanceLoading(true);
+    adminService
+      .getMaintenance()
+      .then((res) => {
+        if (cancelled) return;
+        setMaintenanceEnabled(!!res?.data?.enabled);
+        setMaintenanceMessage(res?.data?.message || '');
+        setMaintenanceRetryAfter(
+          res?.data?.retryAfterSeconds != null
+            ? String(res.data.retryAfterSeconds)
+            : ''
+        );
+      })
+      .catch((err) => {
+        console.error(err);
+        if (cancelled) return;
+        setToast({
+          type: 'error',
+          message:
+            err?.response?.data?.message ||
+            'Erreur lors de la récupération du mode maintenance.',
+        });
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setMaintenanceLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, isAdmin]);
+
+  const saveMaintenance = async (enabledOverride = null) => {
+    const enabled =
+      enabledOverride == null ? !!maintenanceEnabled : !!enabledOverride;
+
+    const retryAfterSeconds = toNonNegativeIntOrNull(maintenanceRetryAfter);
+
+    setMaintenanceSaving(true);
+    try {
+      const res = await adminService.setMaintenance({
+        enabled,
+        message: normalizeText(maintenanceMessage) || null,
+        retryAfterSeconds,
+      });
+      setMaintenanceEnabled(!!res?.data?.enabled);
+      setMaintenanceMessage(res?.data?.message || '');
+      setMaintenanceRetryAfter(
+        res?.data?.retryAfterSeconds != null
+          ? String(res.data.retryAfterSeconds)
+          : ''
+      );
+
+      setToast({
+        type: 'success',
+        message: enabled ? 'Maintenance activée.' : 'Maintenance désactivée.',
+      });
+    } catch (err) {
+      console.error(err);
+      rollbackOptimistic?.();
+      setToast({
+        type: 'error',
+        message:
+          err?.response?.data?.message ||
+          'Erreur lors de la mise à jour de la maintenance.',
+      });
+    } finally {
+      setMaintenanceSaving(false);
+    }
+  };
 
   useEffect(() => {
     if (
@@ -134,7 +492,13 @@ function AdminPage() {
       adminService.getFactories(),
       adminService.getSkills(),
       adminService.getRealmUnlockCosts({ limit: 1000 }),
-      adminService.getPlayers({ search: '', limit: 100 }),
+      adminService.getPlayers({
+        search: '',
+        limit: 50,
+        offset: 0,
+        sortBy: 'id',
+        sortDir: 'DESC',
+      }),
     ]).then((results) => {
       if (cancelled) return;
 
@@ -164,6 +528,7 @@ function AdminPage() {
       }
       if (playersRes.status === 'fulfilled') {
         setPlayers(playersRes.value?.data?.items ?? []);
+        setPlayersTotal(Number(playersRes.value?.data?.total ?? 0));
         setPlayersPrefetched(true);
       }
 
@@ -204,7 +569,15 @@ function AdminPage() {
     if (!isAdmin) return;
     if (activeTab !== 'players') return;
 
-    if (playersPrefetched && !normalizeText(search)) {
+    const q = normalizeText(playersSearch);
+    const isDefaultQuery =
+      !q &&
+      playersPage === 0 &&
+      playersLimit === 50 &&
+      playersSortBy === 'id' &&
+      playersSortDir === 'DESC';
+
+    if (playersPrefetched && isDefaultQuery) {
       setPlayersPrefetched(false);
       return;
     }
@@ -212,13 +585,20 @@ function AdminPage() {
     let cancelled = false;
     setPlayersLoading(true);
 
-    const q = normalizeText(search);
+    const offset = Math.max(0, playersPage) * Math.max(1, playersLimit);
     const id = setTimeout(() => {
       adminService
-        .getPlayers({ search: q, limit: 100 })
+        .getPlayers({
+          search: q,
+          limit: playersLimit,
+          offset,
+          sortBy: playersSortBy,
+          sortDir: playersSortDir,
+        })
         .then((res) => {
           if (cancelled) return;
           setPlayers(res?.data?.items ?? []);
+          setPlayersTotal(Number(res?.data?.total ?? 0));
         })
         .catch((err) => {
           console.error(err);
@@ -240,7 +620,15 @@ function AdminPage() {
       cancelled = true;
       clearTimeout(id);
     };
-  }, [activeTab, isAdmin, search]);
+  }, [
+    activeTab,
+    isAdmin,
+    playersSearch,
+    playersPage,
+    playersLimit,
+    playersSortBy,
+    playersSortDir,
+  ]);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -277,6 +665,22 @@ function AdminPage() {
 
   useEffect(() => {
     if (!isAdmin) return;
+    if (activeTab !== 'players') return;
+
+    const nextIdRaw = searchParams.get('playerId');
+    if (nextIdRaw == null) {
+      setSelectedPlayerId((prev) => (prev != null ? null : prev));
+      return;
+    }
+    const nextId = clampInt(nextIdRaw, { min: 1 });
+    if (!nextId) return;
+    setSelectedPlayerId((prev) =>
+      Number(prev) === Number(nextId) ? prev : nextId
+    );
+  }, [activeTab, isAdmin, searchParamsKey]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
     if (activeTab !== 'support') return;
     if (supportTab !== 'tickets') return;
 
@@ -285,10 +689,19 @@ function AdminPage() {
 
     const status = String(supportStatus ?? '').trim();
     const q = normalizeText(supportSearch);
+    const category = normalizeText(supportCategory);
+    const offset = Math.max(0, supportPage) * Math.max(1, supportLimit);
 
     const id = setTimeout(() => {
       adminService
-        .getSupportTickets({ status, search: q, limit: 200, offset: 0 })
+        .getSupportTickets({
+          status,
+          search: q,
+          category,
+          limit: supportLimit,
+          offset,
+          sortDir: supportSortDir,
+        })
         .then((res) => {
           if (cancelled) return;
           setSupportTickets(res?.data?.items ?? []);
@@ -314,7 +727,74 @@ function AdminPage() {
       cancelled = true;
       clearTimeout(id);
     };
-  }, [activeTab, isAdmin, supportTab, supportStatus, supportSearch]);
+  }, [
+    activeTab,
+    isAdmin,
+    supportTab,
+    supportStatus,
+    supportSearch,
+    supportCategory,
+    supportPage,
+    supportLimit,
+    supportSortDir,
+  ]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    if (activeTab !== 'support') return;
+    if (supportTab !== 'tickets') return;
+
+    const nextIdRaw = searchParams.get('ticketId');
+    if (nextIdRaw == null) {
+      setSelectedTicketId((prev) => (prev != null ? null : prev));
+      return;
+    }
+    const nextId = clampInt(nextIdRaw, { min: 1 });
+    if (!nextId) return;
+    setSelectedTicketId((prev) =>
+      Number(prev) === Number(nextId) ? prev : nextId
+    );
+  }, [activeTab, isAdmin, supportTab, searchParamsKey]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    if (activeTab !== 'support') return;
+    if (supportTab === 'logs') return;
+    if (logsPrefetched) return;
+
+    let cancelled = false;
+
+    adminService
+      .getAdminLogs({
+        limit: 1,
+        offset: 0,
+        actionType: normalizeText(logsActionType),
+        targetTable: normalizeText(logsTargetTable),
+        userId: normalizeText(logsUserId),
+        sortDir: logsSortDir,
+      })
+      .then((res) => {
+        if (cancelled) return;
+        setLogsTotal(Number(res?.data?.total ?? 0));
+        setLogsPrefetched(true);
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activeTab,
+    isAdmin,
+    supportTab,
+    logsPrefetched,
+    logsActionType,
+    logsTargetTable,
+    logsUserId,
+    logsSortDir,
+  ]);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -324,19 +804,22 @@ function AdminPage() {
     let cancelled = false;
     setLogsLoading(true);
 
+    const offset = Math.max(0, logsPage) * Math.max(1, logsLimit);
     const id = setTimeout(() => {
       adminService
         .getAdminLogs({
-          limit: 250,
-          offset: 0,
+          limit: logsLimit,
+          offset,
           actionType: normalizeText(logsActionType),
           targetTable: normalizeText(logsTargetTable),
           userId: normalizeText(logsUserId),
+          sortDir: logsSortDir,
         })
         .then((res) => {
           if (cancelled) return;
           setLogs(res?.data?.items ?? []);
           setLogsTotal(Number(res?.data?.total ?? 0));
+          setLogsPrefetched(true);
         })
         .catch((err) => {
           console.error(err);
@@ -365,6 +848,9 @@ function AdminPage() {
     logsActionType,
     logsTargetTable,
     logsUserId,
+    logsPage,
+    logsLimit,
+    logsSortDir,
   ]);
 
   useEffect(() => {
@@ -444,6 +930,7 @@ function AdminPage() {
     confirmLabel: nextConfirmLabel = 'Confirmer',
     danger = true,
     expectedText = '',
+    details = null,
     action,
   }) => {
     setConfirmTitle(title || 'Confirmation');
@@ -451,14 +938,54 @@ function AdminPage() {
     setConfirmLabel(nextConfirmLabel);
     setConfirmDanger(danger);
     setConfirmExpectedText(expectedText);
+    setConfirmDetails(details);
     setConfirmAction(() => action);
     setConfirmOpen(true);
+  };
+
+  const copyToClipboard = async (value) => {
+    const text = String(value ?? '');
+    if (!text) return false;
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch {
+      // fall back below
+    }
+
+    try {
+      const el = document.createElement('textarea');
+      el.value = text;
+      el.setAttribute('readonly', 'true');
+      el.style.position = 'fixed';
+      el.style.left = '-9999px';
+      el.style.top = '0';
+      document.body.appendChild(el);
+      el.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(el);
+      return ok;
+    } catch {
+      return false;
+    }
+  };
+
+  const copyWithToast = async (value, label = 'Valeur') => {
+    const ok = await copyToClipboard(value);
+    setToast(
+      ok
+        ? { type: 'success', message: `${label} copié.` }
+        : { type: 'error', message: `Impossible de copier ${label}.` }
+    );
   };
 
   const closeConfirm = () => {
     if (confirmLoading) return;
     setConfirmOpen(false);
     setConfirmAction(null);
+    setConfirmDetails(null);
   };
 
   const submitConfirm = async () => {
@@ -508,6 +1035,29 @@ function AdminPage() {
   const mergedRow = (type, row) => {
     const key = `${type}:${row.id}`;
     return { ...row, ...(edits[key] || {}) };
+  };
+
+  const getRowDiffs = (type, row) => {
+    const id = row?.id;
+    if (id == null) return [];
+    const key = `${type}:${id}`;
+    const rowEdits = edits[key];
+    if (!rowEdits) return [];
+    const merged = mergedRow(type, row);
+    return Object.keys(rowEdits)
+      .map((field) => {
+        const before = row?.[field];
+        const after = merged?.[field];
+        const beforeText = normalizeText(before);
+        const afterText = normalizeText(after);
+        if (beforeText === afterText) return null;
+        return {
+          field,
+          before: beforeText || '-',
+          after: afterText || '-',
+        };
+      })
+      .filter(Boolean);
   };
 
   const isRowSaving = (type, id) => !!saving[`${type}:${id}`];
@@ -634,21 +1184,120 @@ function AdminPage() {
     );
   }, [supportTickets, selectedTicketId]);
 
+  const supportCategoryOptions = useMemo(() => {
+    const set = new Set();
+    for (const t of supportTickets || []) {
+      const category = normalizeText(t?.category);
+      if (category) set.add(category);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'fr-FR'));
+  }, [supportTickets]);
+
+  const applyOptimisticRowUpdate = (type, id, nextRow) => {
+    const numericId = Number(id);
+
+    if (type === 'realms') {
+      const prevRow = (realms || []).find((r) => Number(r.id) === numericId);
+      setRealms((prev) =>
+        (prev || []).map((r) => (Number(r.id) === numericId ? nextRow : r))
+      );
+      return () => {
+        if (!prevRow) return;
+        setRealms((prev) =>
+          (prev || []).map((r) => (Number(r.id) === numericId ? prevRow : r))
+        );
+      };
+    }
+
+    if (type === 'resources') {
+      const prevRow = (resources || []).find((r) => Number(r.id) === numericId);
+      setResources((prev) =>
+        (prev || []).map((r) => (Number(r.id) === numericId ? nextRow : r))
+      );
+      return () => {
+        if (!prevRow) return;
+        setResources((prev) =>
+          (prev || []).map((r) => (Number(r.id) === numericId ? prevRow : r))
+        );
+      };
+    }
+
+    if (type === 'factories') {
+      const prevRow = (factories || []).find((r) => Number(r.id) === numericId);
+      setFactories((prev) =>
+        (prev || []).map((r) => (Number(r.id) === numericId ? nextRow : r))
+      );
+      return () => {
+        if (!prevRow) return;
+        setFactories((prev) =>
+          (prev || []).map((r) => (Number(r.id) === numericId ? prevRow : r))
+        );
+      };
+    }
+
+    if (type === 'skills') {
+      const prevRow = (skills || []).find((r) => Number(r.id) === numericId);
+      setSkills((prev) =>
+        (prev || []).map((r) => (Number(r.id) === numericId ? nextRow : r))
+      );
+      return () => {
+        if (!prevRow) return;
+        setSkills((prev) =>
+          (prev || []).map((r) => (Number(r.id) === numericId ? prevRow : r))
+        );
+      };
+    }
+
+    if (type === 'realm_unlock_costs') {
+      const prevRow = (realmUnlockCosts || []).find(
+        (r) => Number(r.id) === numericId
+      );
+      setRealmUnlockCosts((prev) =>
+        (prev || []).map((r) => (Number(r.id) === numericId ? nextRow : r))
+      );
+      return () => {
+        if (!prevRow) return;
+        setRealmUnlockCosts((prev) =>
+          (prev || []).map((r) => (Number(r.id) === numericId ? prevRow : r))
+        );
+      };
+    }
+
+    if (type === 'endgame_requirements') {
+      const prevRow = (endgameRequirements || []).find(
+        (r) => Number(r.id) === numericId
+      );
+      setEndgameRequirements((prev) =>
+        (prev || []).map((r) => (Number(r.id) === numericId ? nextRow : r))
+      );
+      return () => {
+        if (!prevRow) return;
+        setEndgameRequirements((prev) =>
+          (prev || []).map((r) => (Number(r.id) === numericId ? prevRow : r))
+        );
+      };
+    }
+
+    return null;
+  };
+
   const handleSave = async (type, row) => {
     const id = row.id;
     if (id == null) return false;
 
     const key = `${type}:${id}`;
     const rowEdits = edits[key];
-    if (!rowEdits || Object.keys(rowEdits).length === 0) {
+    if (!rowEdits || Object.keys(rowEdits).length === 0 || getRowDiffs(type, row).length === 0) {
       setToast({ type: 'success', message: 'Aucune modification à sauvegarder.' });
       return false;
     }
 
     const merged = mergedRow(type, row);
     setRowSaving(type, id, true);
+    let rollbackOptimistic = null;
 
     try {
+      rollbackOptimistic = applyOptimisticRowUpdate(type, id, merged);
       if (type === 'realms') {
         await adminService.updateRealm(id, {
           code: normalizeText(merged.code),
@@ -745,7 +1394,7 @@ function AdminPage() {
 
     const key = `${type}:${id}`;
     const rowEdits = edits[key];
-    if (!rowEdits || Object.keys(rowEdits).length === 0) {
+    if (!rowEdits || Object.keys(rowEdits).length === 0 || getRowDiffs(type, row).length === 0) {
       setToast({ type: 'success', message: 'Aucune modification à sauvegarder.' });
       return;
     }
@@ -766,12 +1415,14 @@ function AdminPage() {
     const label = labelParts.length > 0 ? ` (${labelParts.join(' - ')})` : '';
     const changesText =
       changes.length > 0 ? `\n\nChangements:\n- ${changes.join('\n- ')}` : '';
+    const diffs = getRowDiffs(type, row);
 
     openConfirm({
       title: 'Confirmer la sauvegarde',
       message: `Confirmer la sauvegarde de #${id}${label} ?${changesText}`,
       confirmLabel: 'Sauvegarder',
       danger: false,
+      details: diffs,
       action: () => handleSave(type, row),
     });
   };
@@ -1306,7 +1957,7 @@ function AdminPage() {
     requestPlayerReset();
     return;
     if (
-      !window.confirm(
+      false && (
         `Réinitialiser la progression de ${selectedPlayer.username} (#${selectedPlayer.id}) ?`
       )
     ) {
@@ -1333,9 +1984,7 @@ function AdminPage() {
     if (!selectedPlayerId || !selectedPlayer) return;
     requestPlayerDelete();
     return;
-    const confirmText = window.prompt(
-      `Tape SUPPRIMER pour confirmer la suppression du compte ${selectedPlayer.username} (#${selectedPlayer.id}).`
-    );
+    const confirmText = null;
     if (confirmText !== 'SUPPRIMER') return;
 
     try {
@@ -1361,11 +2010,13 @@ function AdminPage() {
   const refreshSupportTickets = async () => {
     try {
       setSupportTicketsLoading(true);
+      const offset = Math.max(0, supportPage) * Math.max(1, supportLimit);
       const res = await adminService.getSupportTickets({
         status: normalizeText(supportStatus),
         search: normalizeText(supportSearch),
-        limit: 200,
-        offset: 0,
+        limit: supportLimit,
+        offset,
+        sortDir: supportSortDir,
       });
       setSupportTickets(res?.data?.items ?? []);
       setSupportTicketsTotal(Number(res?.data?.total ?? 0));
@@ -1402,12 +2053,14 @@ function AdminPage() {
   const refreshAdminLogs = async () => {
     try {
       setLogsLoading(true);
+      const offset = Math.max(0, logsPage) * Math.max(1, logsLimit);
       const res = await adminService.getAdminLogs({
-        limit: 250,
-        offset: 0,
+        limit: logsLimit,
+        offset,
         actionType: normalizeText(logsActionType),
         targetTable: normalizeText(logsTargetTable),
         userId: normalizeText(logsUserId),
+        sortDir: logsSortDir,
       });
       setLogs(res?.data?.items ?? []);
       setLogsTotal(Number(res?.data?.total ?? 0));
@@ -1520,7 +2173,7 @@ function AdminPage() {
       hint: `${realms.length + realmUnlockCosts.length + resources.length + factories.length + skills.length} items`,
     },
     { key: 'endgame', label: 'Endgame', hint: 'Règles + classement' },
-    { key: 'players', label: 'Joueurs', hint: `${players.length} joueurs` },
+    { key: 'players', label: 'Joueurs', hint: `${playersTotal || players.length} joueurs` },
     { key: 'support', label: 'Support & Logs', hint: 'Ops + audit' },
   ];
 
@@ -1556,99 +2209,118 @@ function AdminPage() {
   const inputClass =
     'w-full rounded-md bg-slate-950/60 border border-slate-700 px-2 py-1 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70';
 
+  const dirtyInfo = useMemo(() => {
+    const balanceTypes = new Set([
+      'realms',
+      'realm_unlock_costs',
+      'resources',
+      'factories',
+      'skills',
+    ]);
+
+    const type =
+      activeTab === 'endgame'
+        ? endgameTab === 'requirements'
+          ? 'endgame_requirements'
+          : null
+        : balanceTypes.has(activeTab)
+          ? activeTab
+          : null;
+
+    if (!type) return { rows: 0, fields: 0 };
+
+    const list =
+      type === 'endgame_requirements'
+        ? endgameRequirements
+        : type === 'realms'
+          ? realms
+          : type === 'realm_unlock_costs'
+            ? realmUnlockCosts
+            : type === 'resources'
+              ? resources
+              : type === 'factories'
+                ? factories
+                : type === 'skills'
+                  ? skills
+                  : [];
+
+    const byId = new Map((list || []).map((row) => [String(row?.id), row]));
+    let rows = 0;
+    let fields = 0;
+
+    for (const key of Object.keys(edits || {})) {
+      if (!key.startsWith(`${type}:`)) continue;
+      const id = key.slice(type.length + 1);
+      const row = byId.get(String(id));
+      if (!row) continue;
+      const diffs = getRowDiffs(type, row);
+      if (diffs.length === 0) continue;
+      rows += 1;
+      fields += diffs.length;
+    }
+
+    return { rows, fields };
+  }, [
+    activeTab,
+    endgameTab,
+    edits,
+    endgameRequirements,
+    factories,
+    realmUnlockCosts,
+    realms,
+    resources,
+    skills,
+  ]);
+
+  const playersOffset = Math.max(0, playersPage) * Math.max(1, playersLimit);
+  const playersFrom = playersTotal ? playersOffset + 1 : 0;
+  const playersTo = playersTotal
+    ? Math.min(playersOffset + (players?.length ?? 0), playersTotal)
+    : 0;
+  const playersMaxPage = Math.max(
+    0,
+    Math.ceil(Math.max(0, playersTotal) / Math.max(1, playersLimit)) - 1
+  );
+
+  const supportOffset = Math.max(0, supportPage) * Math.max(1, supportLimit);
+  const supportFrom = supportTicketsTotal ? supportOffset + 1 : 0;
+  const supportTo = supportTicketsTotal
+    ? Math.min(supportOffset + (supportTickets?.length ?? 0), supportTicketsTotal)
+    : 0;
+  const supportMaxPage = Math.max(
+    0,
+    Math.ceil(Math.max(0, supportTicketsTotal) / Math.max(1, supportLimit)) - 1
+  );
+
+  const logsOffset = Math.max(0, logsPage) * Math.max(1, logsLimit);
+  const logsFrom = logsTotal ? logsOffset + 1 : 0;
+  const logsTo = logsTotal ? Math.min(logsOffset + (logs?.length ?? 0), logsTotal) : 0;
+  const logsMaxPage = Math.max(
+    0,
+    Math.ceil(Math.max(0, logsTotal) / Math.max(1, logsLimit)) - 1
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-amber-950 text-slate-100">
       <Toast toast={toast} />
 
-      {confirmOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
-          <button
-            type="button"
-            aria-label="Fermer"
-            onClick={closeConfirm}
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-          />
+      <ConfirmModal
+        open={confirmOpen}
+        title={confirmTitle}
+        message={confirmMessage}
+        danger={confirmDanger}
+        confirmLabel={confirmLabel}
+        expectedText={confirmExpectedText}
+        inputValue={confirmInput}
+        onInputChange={setConfirmInput}
+        details={confirmDetails}
+        loading={confirmLoading}
+        error={confirmError}
+        onCancel={closeConfirm}
+        onConfirm={submitConfirm}
+      />
 
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label={confirmTitle || 'Confirmation'}
-            className="relative w-full max-w-lg"
-          >
-            <div
-              className={`rounded-2xl border bg-slate-950/90 shadow-[0_0_40px_rgba(0,0,0,0.55)] ${
-                confirmDanger ? 'border-red-500/40' : 'border-amber-500/30'
-              }`}
-            >
-              <div className="px-5 py-4 border-b border-slate-800/60">
-                <h2
-                  className={`text-lg font-semibold ${
-                    confirmDanger ? 'text-red-100' : 'text-amber-100'
-                  }`}
-                >
-                  {confirmTitle}
-                </h2>
-                {confirmMessage && (
-                  <p className="mt-2 text-sm text-slate-200/90 whitespace-pre-line">
-                    {confirmMessage}
-                  </p>
-                )}
-              </div>
-
-              <div className="px-5 py-4 space-y-3">
-                {confirmExpectedText ? (
-                  <div className="space-y-1">
-                    <label className="text-xs text-slate-300">
-                      Confirmation (à taper)
-                    </label>
-                    <input
-                      className="w-full rounded-md bg-slate-950/60 border border-slate-700 px-3 py-2 text-sm text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
-                      value={confirmInput}
-                      onChange={(e) => setConfirmInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') submitConfirm();
-                        if (e.key === 'Escape') closeConfirm();
-                      }}
-                      autoFocus
-                      placeholder={confirmExpectedText}
-                      disabled={confirmLoading}
-                    />
-                  </div>
-                ) : null}
-
-                {confirmError ? (
-                  <div className="rounded-md border border-red-500/40 bg-red-950/40 px-3 py-2 text-sm text-red-100">
-                    {confirmError}
-                  </div>
-                ) : null}
-
-                <div className="flex items-center justify-end gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={closeConfirm}
-                    disabled={confirmLoading}
-                    className="px-3 py-2 rounded-md border border-slate-700 text-slate-200 hover:border-slate-500 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    type="button"
-                    onClick={submitConfirm}
-                    disabled={confirmLoading}
-                    className={`px-3 py-2 rounded-md font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
-                      confirmDanger
-                        ? 'bg-red-500 hover:bg-red-400 text-slate-900'
-                        : 'bg-amber-500 hover:bg-amber-400 text-slate-900'
-                    }`}
-                  >
-                    {confirmLoading ? 'En coursâ€¦' : confirmLabel}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      
 
       <div className="max-w-6xl mx-auto px-4 py-10 md:py-16">
         <header className="mb-8 text-center">
@@ -1697,7 +2369,7 @@ function AdminPage() {
                     if (t.key === 'balance') setActiveTab(balanceTab);
                     else setActiveTab(t.key);
                   }}
-                  className={`px-3 py-1 rounded-md border text-xs transition-colors ${
+                  className={`px-3 py-1 rounded-md border text-xs transition-colors focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70 ${
                     activeMainTab === t.key
                       ? 'border-amber-400 text-amber-200 bg-amber-500/10'
                       : 'border-slate-700 text-slate-200 hover:border-amber-400 hover:text-amber-200'
@@ -1713,15 +2385,15 @@ function AdminPage() {
               <div className="flex flex-wrap gap-2">
                 {balanceTabs.map((t) => (
                   <button
-                    key={t.key}
-                    type="button"
-                    onClick={() => setActiveTab(t.key)}
-                    className={`px-3 py-1 rounded-md border text-xs transition-colors ${
-                      activeTab === t.key
-                        ? 'border-emerald-400 text-emerald-200 bg-emerald-500/10'
-                        : 'border-slate-700 text-slate-200 hover:border-emerald-400 hover:text-emerald-200'
-                    }`}
-                  >
+                      key={t.key}
+                      type="button"
+                      onClick={() => setActiveTab(t.key)}
+                      className={`px-3 py-1 rounded-md border text-xs transition-colors focus:outline-none focus-visible:ring focus-visible:ring-emerald-400/70 ${
+                        activeTab === t.key
+                          ? 'border-emerald-400 text-emerald-200 bg-emerald-500/10'
+                          : 'border-slate-700 text-slate-200 hover:border-emerald-400 hover:text-emerald-200'
+                      }`}
+                    >
                     {t.label}{' '}
                     <span className="text-[11px] text-slate-400">
                       ({t.count})
@@ -1731,30 +2403,54 @@ function AdminPage() {
               </div>
             )}
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+              {dirtyInfo.rows > 0 ? (
+                <div className="shrink-0 px-3 py-2 rounded-lg border border-amber-500/40 bg-amber-500/10 text-xs text-amber-200">
+                  Modifications non enregistrées ({dirtyInfo.rows})
+                </div>
+              ) : null}
               <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                value={activeTab === 'players' ? playersSearch : search}
+                aria-label={
+                  activeTab === 'players'
+                    ? 'Rechercher un joueur'
+                    : 'Rechercher dans le tableau'
+                }
+                onChange={(e) => {
+                  if (activeTab === 'players') {
+                    setPlayersSearch(e.target.value);
+                    setPlayersPage(0);
+                  } else {
+                    setSearch(e.target.value);
+                  }
+                }}
                 placeholder={
                   activeTab === 'players'
                     ? 'Rechercher (id, pseudo, email...)'
                     : 'Rechercher (id, code, nom...)'
                 }
-                className="w-full md:w-72 rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
+                className="flex-1 min-w-0 md:flex-none md:w-72 rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
               />
               {isBalanceTab && (
                 <button
                   type="button"
                   onClick={openCreate}
-                  className="px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-xs text-slate-900 font-semibold transition-colors"
+                  className="shrink-0 px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-xs text-slate-900 font-semibold transition-colors"
                 >
                   Créer
                 </button>
               )}
               <button
                 type="button"
-                onClick={() => setSearch('')}
-                className="px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
+                onClick={() => {
+                  if (activeTab === 'players') {
+                    setPlayersSearch('');
+                    setPlayersPage(0);
+                  }
+                  else setSearch('');
+                }}
+                aria-label="Réinitialiser la recherche"
+                className="shrink-0 px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
               >
                 Reset
               </button>
@@ -2175,20 +2871,167 @@ function AdminPage() {
 
             {activeTab === 'players' ? (
               <div className="grid gap-4 lg:grid-cols-2">
-                <div className="rounded-xl border border-slate-800/70 bg-slate-950/40 p-3">
-                  <div className="flex items-center justify-between gap-3 mb-3">
-                    <p className="text-xs text-slate-300">Liste des joueurs</p>
-                    {playersLoading && (
-                      <p className="text-[11px] text-slate-500">Chargement...</p>
-                    )}
+                <div
+                  className={`min-w-0 rounded-xl border border-slate-800/70 bg-slate-950/40 p-3 ${
+                    selectedPlayerId ? 'hidden lg:block' : ''
+                  }`}
+                >
+                  <div className="flex flex-col gap-2 mb-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs text-slate-300">Liste des joueurs</p>
+                        <span className="px-2 py-0.5 rounded-full border border-slate-700 text-[10px] text-slate-300">
+                          Recherche serveur
+                        </span>
+                      </div>
+                      {playersLoading && (
+                        <p className="text-[11px] text-slate-500">Chargement...</p>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-[11px] text-slate-400">
+                        {playersFrom}-{playersTo} / {playersTotal}
+                      </p>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        <select
+                          value={playersSortBy}
+                          aria-label="Trier les joueurs par"
+                          onChange={(e) => {
+                            setPlayersSortBy(e.target.value);
+                            setPlayersPage(0);
+                          }}
+                          className="rounded-lg bg-slate-950/60 border border-slate-700 px-2 py-1 text-[11px] text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
+                        >
+                          <option value="id">ID</option>
+                          <option value="last_login_at">Dernière connexion</option>
+                          <option value="created_at">Création</option>
+                          <option value="username">Pseudo</option>
+                          <option value="email">Email</option>
+                          <option value="role">Rôle</option>
+                        </select>
+
+                        <button
+                          type="button"
+                          aria-label="Inverser le sens du tri des joueurs"
+                          onClick={() => {
+                            setPlayersSortDir((p) => (p === 'ASC' ? 'DESC' : 'ASC'));
+                            setPlayersPage(0);
+                          }}
+                          className="px-2 py-1 rounded-lg border border-slate-700 text-[11px] text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
+                        >
+                          {playersSortDir === 'ASC' ? 'Asc' : 'Desc'}
+                        </button>
+
+                        <select
+                          value={playersLimit}
+                          aria-label="Nombre de joueurs par page"
+                          onChange={(e) => {
+                            setPlayersLimit(Number(e.target.value));
+                            setPlayersPage(0);
+                          }}
+                          className="rounded-lg bg-slate-950/60 border border-slate-700 px-2 py-1 text-[11px] text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
+                        >
+                          <option value={25}>25</option>
+                          <option value={50}>50</option>
+                          <option value={100}>100</option>
+                          <option value={200}>200</option>
+                        </select>
+
+                        <PaginationControls
+                          disabled={playersLoading || playersTotal <= 0}
+                          page={playersPage}
+                          maxPage={playersMaxPage}
+                          onPrev={() => setPlayersPage((p) => Math.max(0, p - 1))}
+                          onNext={() =>
+                            setPlayersPage((p) => Math.min(playersMaxPage, p + 1))
+                          }
+                          ariaPrev="Page précédente joueurs"
+                          ariaNext="Page suivante joueurs"
+                        />
+
+                        
+                      </div>
+                    </div>
                   </div>
 
                   {playersLoading ? (
-                    <p className="text-sm text-slate-300">Chargement...</p>
+                    <div className="space-y-3" aria-busy="true">
+                      <div className="md:hidden">
+                        <SkeletonCards items={6} />
+                      </div>
+                      <div className="hidden md:block">
+                        <SkeletonTable rows={8} cols={5} titleWidth="w-32" />
+                      </div>
+                    </div>
                   ) : players.length === 0 ? (
                     <p className="text-sm text-slate-300">Aucun joueur.</p>
                   ) : (
-                    <div className="overflow-x-auto">
+                    <>
+                      <div className="md:hidden space-y-2">
+                        {players.map((p) => {
+                          const selected = Number(selectedPlayerId) === Number(p.id);
+                          return (
+                            <button
+                              key={`player-card-${p.id}`}
+                              type="button"
+                              onClick={() => {
+                                setSelectedPlayerId(p.id);
+                                setPlayerResourceId('');
+                                setPlayerResourceAmount('');
+                                setPlayerRealmCode('');
+                                setPlayerRealmActivateId('');
+                                setPlayerFactoryId('');
+                                setPlayerFactoryLevel('');
+                                setPlayerSkillId('');
+                                setPlayerSkillLevel('');
+                                setSelectedPlayerFactories([]);
+                                setSelectedPlayerSkills([]);
+                              }}
+                              className={`w-full text-left rounded-lg border p-3 transition-colors ${
+                                selected
+                                  ? 'border-amber-400/50 bg-amber-500/10'
+                                  : 'border-slate-800/70 bg-slate-950/30 hover:bg-slate-900/40'
+                              } focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70`}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="text-sm text-slate-100 font-semibold">
+                                    {p.username || '(sans pseudo)'}
+                                  </p>
+                                  <p className="text-[11px] text-slate-400 mt-0.5">
+                                    {p.email || '-'}
+                                  </p>
+                                </div>
+                                <p className="text-[11px] text-amber-300 font-mono">
+                                  #{p.id}
+                                </p>
+                              </div>
+                              <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
+                                <div>
+                                  <p className="uppercase tracking-widest text-slate-500">
+                                    Rôle
+                                  </p>
+                                  <Badge className="mt-0.5">{p.role || '-'}</Badge>
+                                </div>
+                                <div>
+                                  <p className="uppercase tracking-widest text-slate-500">
+                                    Dernière connexion
+                                  </p>
+                                  <p className="text-slate-300">
+                                    {p.last_login_at
+                                      ? new Date(p.last_login_at).toLocaleString('fr-FR')
+                                      : '-'}
+                                  </p>
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div className="hidden md:block overflow-x-auto">
                       <table className="w-full text-left text-xs">
                         <thead className="text-[11px] uppercase tracking-widest text-slate-400">
                           <tr className="border-b border-slate-800/70">
@@ -2203,26 +3046,37 @@ function AdminPage() {
                           {players.map((p) => {
                             const selected =
                               Number(selectedPlayerId) === Number(p.id);
+                            const selectPlayer = () => {
+                              setSelectedPlayerId(p.id);
+                              setPlayerResourceId('');
+                              setPlayerResourceAmount('');
+                              setPlayerRealmCode('');
+                              setPlayerRealmActivateId('');
+                              setPlayerFactoryId('');
+                              setPlayerFactoryLevel('');
+                              setPlayerSkillId('');
+                              setPlayerSkillLevel('');
+                              setSelectedPlayerFactories([]);
+                              setSelectedPlayerSkills([]);
+                            };
                             return (
                               <tr
                                 key={`player-${p.id}`}
-                                className={`border-b border-slate-800/60 cursor-pointer ${
+                                role="button"
+                                tabIndex={0}
+                                aria-label={`Ouvrir le joueur #${p.id}`}
+                                aria-selected={selected}
+                                className={`border-b border-slate-800/60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${
                                   selected
                                     ? 'bg-amber-500/10'
                                     : 'hover:bg-slate-900/40'
                                 }`}
-                                onClick={() => {
-                                  setSelectedPlayerId(p.id);
-                                  setPlayerResourceId('');
-                                  setPlayerResourceAmount('');
-                                  setPlayerRealmCode('');
-                                  setPlayerRealmActivateId('');
-                                  setPlayerFactoryId('');
-                                  setPlayerFactoryLevel('');
-                                  setPlayerSkillId('');
-                                  setPlayerSkillLevel('');
-                                  setSelectedPlayerFactories([]);
-                                  setSelectedPlayerSkills([]);
+                                onClick={selectPlayer}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    selectPlayer();
+                                  }
                                 }}
                               >
                                 <td className="py-2 pr-3 font-mono text-amber-300">
@@ -2235,7 +3089,7 @@ function AdminPage() {
                                   {p.email || '-'}
                                 </td>
                                 <td className="py-2 pr-3 text-slate-300">
-                                  {p.role || '-'}
+                                  <Badge>{p.role || '-'}</Badge>
                                 </td>
                                 <td className="py-2 text-slate-400">
                                   {p.last_login_at
@@ -2250,12 +3104,27 @@ function AdminPage() {
                         </tbody>
                       </table>
                     </div>
+                    </>
                   )}
                 </div>
 
-                <div className="rounded-xl border border-slate-800/70 bg-slate-950/40 p-3 space-y-3">
+                <div
+                  className={`min-w-0 rounded-xl border border-slate-800/70 bg-slate-950/40 p-3 space-y-3 ${
+                    selectedPlayerId ? '' : 'hidden lg:block'
+                  }`}
+                >
+                  <div className="sticky top-0 z-20 -mx-3 px-3 py-3 bg-slate-950/85 backdrop-blur border-b border-slate-800/70">
                   <div className="flex items-start justify-between gap-3">
                     <div>
+                      {selectedPlayerId ? (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedPlayerId(null)}
+                          className="lg:hidden mb-2 px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
+                        >
+                          {'<'} Retour
+                        </button>
+                      ) : null}
                       <p className="text-xs text-slate-300">Gestion du joueur</p>
                       {selectedPlayer ? (
                         <p className="text-sm text-slate-100 mt-1">
@@ -2271,6 +3140,32 @@ function AdminPage() {
                           Sélectionne un joueur à gauche.
                         </p>
                       )}
+                      {selectedPlayer ? (
+                        <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-slate-300">
+                          <p className="truncate">
+                            <span className="text-slate-500">Email:</span>{' '}
+                            <span className="text-slate-200">
+                              {selectedPlayer.email || '-'}
+                            </span>
+                          </p>
+                          <p className="truncate">
+                            <span className="text-slate-500">Role:</span>{' '}
+                            <span className="text-slate-200">
+                              {selectedPlayer.role || '-'}
+                            </span>
+                          </p>
+                          <p className="col-span-2 truncate">
+                            <span className="text-slate-500">Derniere connexion:</span>{' '}
+                            <span className="text-slate-200">
+                              {selectedPlayer.last_login_at
+                                ? new Date(
+                                    selectedPlayer.last_login_at
+                                  ).toLocaleString('fr-FR')
+                                : '-'}
+                            </span>
+                          </p>
+                        </div>
+                      ) : null}
                     </div>
 
                     {selectedPlayerId && (
@@ -2282,6 +3177,7 @@ function AdminPage() {
                         Rafraîchir
                       </button>
                     )}
+                  </div>
                   </div>
 
                   {selectedPlayer && (
@@ -2339,7 +3235,7 @@ function AdminPage() {
 
                       <div className="grid gap-3 rounded-lg border border-slate-800 bg-slate-950/30 p-3">
                         <p className="text-xs text-slate-300 font-semibold">
-                          Niveaux usines / skills
+                          Niveaux usines / compétences
                         </p>
                         <div className="grid gap-2 md:grid-cols-4">
                           <select
@@ -2499,7 +3395,7 @@ function AdminPage() {
                         </button>
                       </div>
 
-                      <div className="rounded-lg border border-slate-800 bg-slate-950/30 p-2 max-h-80 overflow-y-auto">
+                      <div className="min-w-0 max-w-full rounded-lg border border-slate-800 bg-slate-950/30 p-2 max-h-80 overflow-y-auto overflow-x-auto">
                         <table className="w-full text-left text-xs">
                           <thead className="text-[11px] uppercase tracking-widest text-slate-400">
                             <tr className="border-b border-slate-800/70">
@@ -2520,13 +3416,23 @@ function AdminPage() {
                                   </span>{' '}
                                   <span className="text-slate-400">{r.name}</span>
                                 </td>
-                                <td className="py-2 pr-3 font-mono text-slate-100">
-                                  {Number(r.amount || 0).toLocaleString('fr-FR')}
+                                <td className="py-2 pr-3 font-mono text-slate-100 tabular-nums whitespace-nowrap">
+                                  <span title={formatIntegerFull(r.amount, 'fr-FR')}>
+                                    {formatIntegerCompact(r.amount, 'fr-FR')}
+                                  </span>
                                 </td>
-                                <td className="py-2 font-mono text-slate-300">
-                                  {Number(r.lifetime_amount || 0).toLocaleString(
-                                    'fr-FR'
-                                  )}
+                                <td className="py-2 font-mono text-slate-300 tabular-nums whitespace-nowrap">
+                                  <span
+                                    title={formatIntegerFull(
+                                      r.lifetime_amount,
+                                      'fr-FR'
+                                    )}
+                                  >
+                                    {formatIntegerCompact(
+                                      r.lifetime_amount,
+                                      'fr-FR'
+                                    )}
+                                  </span>
                                 </td>
                               </tr>
                             ))}
@@ -2534,35 +3440,135 @@ function AdminPage() {
                         </table>
                       </div>
 
-                      <div className="pt-2 border-t border-slate-800/70 flex flex-wrap gap-2 justify-end">
-                        <button
-                          type="button"
-                          disabled={playerDangerLoading}
-                          onClick={requestPlayerReset}
-                          className="px-3 py-1 rounded-md border border-amber-500/50 text-amber-200 hover:bg-amber-500/10 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                          Reset progression
-                        </button>
-                        <button
-                          type="button"
-                          disabled={playerDangerLoading}
-                          onClick={requestPlayerDelete}
-                          className="px-3 py-1 rounded-md border border-red-500/50 text-red-200 hover:bg-red-900/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                          Supprimer compte
-                        </button>
-                      </div>
+                      <A11yDetailsWrap
+                        className="pt-2 border-t border-slate-800/70"
+                        summaryClassName="rounded-md"
+                      >
+                        <summary className="cursor-pointer select-none px-1 py-2 text-xs font-semibold text-red-200 flex items-center justify-between gap-3">
+                          <span>Actions dangereuses</span>
+                          <span className="text-[11px] font-normal text-slate-500">
+                            Reset / suppression
+                          </span>
+                        </summary>
+                        <div className="flex flex-wrap gap-2 justify-end pt-1">
+                          <button
+                            type="button"
+                            disabled={playerDangerLoading}
+                            onClick={requestPlayerReset}
+                            className="px-3 py-1 rounded-md border border-amber-500/50 text-amber-200 hover:bg-amber-500/10 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                          >
+                            Reset progression
+                          </button>
+                          <button
+                            type="button"
+                            disabled={playerDangerLoading}
+                            onClick={requestPlayerDelete}
+                            className="px-3 py-1 rounded-md border border-red-500/50 text-red-200 hover:bg-red-900/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                          >
+                            Supprimer compte
+                          </button>
+                        </div>
+                      </A11yDetailsWrap>
                     </div>
                   )}
                 </div>
               </div>
             ) : activeTab === 'support' ? (
               <div className="space-y-4">
+                <div className="rounded-xl border border-amber-500/20 bg-black/40 p-4 shadow-[0_0_40px_rgba(251,191,36,0.10)]">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                    <div className="space-y-1">
+                      <p className="text-xs uppercase tracking-[0.25em] text-amber-300">
+                        Système
+                      </p>
+                      <h2 className="text-lg font-heading text-slate-100">
+                        Maintenance
+                      </h2>
+                      <p className="text-xs text-slate-400 max-w-xl">
+                        Active/désactive l’accès à l’API pour les joueurs. Les admins restent autorisés.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={maintenanceLoading || maintenanceSaving}
+                        onClick={() => saveMaintenance(true)}
+                        className="px-3 py-2 rounded-md border border-amber-500/50 text-amber-200 hover:bg-amber-500/10 transition-colors disabled:opacity-60 disabled:cursor-not-allowed text-xs"
+                      >
+                        Activer
+                      </button>
+                      <button
+                        type="button"
+                        disabled={maintenanceLoading || maintenanceSaving}
+                        onClick={() => saveMaintenance(false)}
+                        className="px-3 py-2 rounded-md border border-slate-700 text-slate-200 hover:bg-white/5 transition-colors disabled:opacity-60 disabled:cursor-not-allowed text-xs"
+                      >
+                        Désactiver
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="md:col-span-2">
+                      <label className="block text-[11px] uppercase tracking-widest text-slate-400 mb-1">
+                        Message (optionnel)
+                      </label>
+                      <input
+                        value={maintenanceMessage}
+                        onChange={(e) => setMaintenanceMessage(e.target.value)}
+                        placeholder="Serveur en maintenance. Merci de réessayer plus tard."
+                        className="w-full rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
+                        disabled={maintenanceLoading || maintenanceSaving}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] uppercase tracking-widest text-slate-400 mb-1">
+                        Réessayer dans (s)
+                      </label>
+                      <input
+                        value={maintenanceRetryAfter}
+                        onChange={(e) => setMaintenanceRetryAfter(e.target.value)}
+                        placeholder="ex: 60"
+                        className="w-full rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
+                        disabled={maintenanceLoading || maintenanceSaving}
+                        inputMode="numeric"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <p className="text-xs text-slate-400">
+                      État :{' '}
+                      <span
+                        className={
+                          maintenanceEnabled
+                            ? 'text-amber-200'
+                            : 'text-emerald-200'
+                        }
+                      >
+                        {maintenanceEnabled ? 'activée' : 'désactivée'}
+                      </span>
+                    </p>
+                    <button
+                      type="button"
+                      disabled={maintenanceLoading || maintenanceSaving}
+                      onClick={() => saveMaintenance()}
+                      className="px-3 py-2 rounded-md border border-amber-400/60 text-amber-200 hover:bg-amber-500/10 transition-colors disabled:opacity-60 disabled:cursor-not-allowed text-xs"
+                    >
+                      {maintenanceSaving ? '...' : 'Enregistrer'}
+                    </button>
+                  </div>
+                </div>
+
                 <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
-                      onClick={() => setSupportTab('tickets')}
+                      onClick={() => {
+                        setSupportTab('tickets');
+                        setSupportPage(0);
+                      }}
                       className={`px-3 py-1 rounded-md border text-xs transition-colors ${
                         supportTab === 'tickets'
                           ? 'border-amber-400 text-amber-200 bg-amber-500/10'
@@ -2576,7 +3582,10 @@ function AdminPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setSupportTab('logs')}
+                      onClick={() => {
+                        setSupportTab('logs');
+                        setLogsPage(0);
+                      }}
                       className={`px-3 py-1 rounded-md border text-xs transition-colors ${
                         supportTab === 'logs'
                           ? 'border-amber-400 text-amber-200 bg-amber-500/10'
@@ -2594,75 +3603,282 @@ function AdminPage() {
                     <div className="flex flex-wrap items-center gap-2">
                       <select
                         value={supportStatus}
-                        onChange={(e) => setSupportStatus(e.target.value)}
+                        aria-label="Filtrer les tickets par statut"
+                        onChange={(e) => {
+                          setSupportStatus(e.target.value);
+                          setSupportPage(0);
+                        }}
                         className="rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
                       >
                         <option value="OPEN">OPEN</option>
                         <option value="CLOSED">CLOSED</option>
                         <option value="">ALL</option>
                       </select>
+                      {supportStatus !== 'OPEN' ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSupportStatus('OPEN');
+                            setSupportPage(0);
+                          }}
+                          className="px-3 py-2 rounded-lg border border-amber-500/50 text-amber-200 hover:bg-amber-500/10 transition-colors text-xs"
+                        >
+                          OPEN only
+                        </button>
+                      ) : null}
+                      <div className="flex items-center gap-2">
+                        <input
+                          list="support-category-list"
+                          value={supportCategory}
+                          aria-label="Filtrer les tickets par catégorie"
+                          onChange={(e) => {
+                            setSupportCategory(e.target.value);
+                            setSupportPage(0);
+                          }}
+                          placeholder="Catégorie"
+                          className="w-40 rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
+                        />
+                        <datalist id="support-category-list">
+                          {supportCategoryOptions.map((cat) => (
+                            <option key={`support-cat-${cat}`} value={cat} />
+                          ))}
+                        </datalist>
+                      </div>
                       <input
                         value={supportSearch}
-                        onChange={(e) => setSupportSearch(e.target.value)}
+                        aria-label="Rechercher un ticket"
+                        onChange={(e) => {
+                          setSupportSearch(e.target.value);
+                          setSupportPage(0);
+                        }}
                         placeholder="Rechercher ticket (email, pseudo, sujet...)"
-                        className="w-full md:w-72 rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
+                        className="flex-1 min-w-0 md:flex-none md:w-72 rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
                       />
+                      <select
+                        value={supportSortDir}
+                        aria-label="Trier les tickets"
+                        onChange={(e) => {
+                          setSupportSortDir(e.target.value);
+                          setSupportPage(0);
+                        }}
+                        className="rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
+                      >
+                        <option value="DESC">Récents</option>
+                        <option value="ASC">Anciens</option>
+                      </select>
+                      <select
+                        value={supportLimit}
+                        aria-label="Nombre de tickets par page"
+                        onChange={(e) => {
+                          setSupportLimit(Number(e.target.value));
+                          setSupportPage(0);
+                        }}
+                        className="rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
+                      >
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                        <option value={200}>200</option>
+                        <option value={500}>500</option>
+                      </select>
                       <button
                         type="button"
                         onClick={refreshSupportTickets}
+                        aria-label="Rafraîchir les tickets"
                         disabled={supportTicketsLoading}
                         className="px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
                       >
                         {supportTicketsLoading ? '...' : 'Rafraîchir'}
                       </button>
+                      <PaginationControls
+                        disabled={supportTicketsLoading || supportTicketsTotal <= 0}
+                        page={supportPage}
+                        maxPage={supportMaxPage}
+                        mode="range"
+                        from={supportFrom}
+                        to={supportTo}
+                        total={supportTicketsTotal}
+                        onPrev={() => setSupportPage((p) => Math.max(0, p - 1))}
+                        onNext={() =>
+                          setSupportPage((p) => Math.min(supportMaxPage, p + 1))
+                        }
+                        ariaPrev="Page précédente tickets"
+                        ariaNext="Page suivante tickets"
+                      />
+
+                      
+
+                      
+
+                      
+
+                      
+
+                      
                     </div>
                   ) : (
                     <div className="flex flex-wrap items-center gap-2">
                       <input
                         value={logsSearch}
+                        aria-label="Filtrer les logs (local)"
                         onChange={(e) => setLogsSearch(e.target.value)}
                         placeholder="Filtre local (description/table...)"
-                        className="w-full md:w-72 rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
+                        className="flex-1 min-w-0 md:flex-none md:w-72 rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
                       />
                       <input
                         value={logsActionType}
-                        onChange={(e) => setLogsActionType(e.target.value)}
+                        aria-label="Filtrer logs par actionType"
+                        onChange={(e) => {
+                          setLogsActionType(e.target.value);
+                          setLogsPage(0);
+                          setLogsPrefetched(false);
+                        }}
                         placeholder="actionType"
                         className="w-32 rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
                       />
                       <input
                         value={logsTargetTable}
-                        onChange={(e) => setLogsTargetTable(e.target.value)}
+                        aria-label="Filtrer logs par targetTable"
+                        onChange={(e) => {
+                          setLogsTargetTable(e.target.value);
+                          setLogsPage(0);
+                          setLogsPrefetched(false);
+                        }}
                         placeholder="targetTable"
                         className="w-32 rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
                       />
                       <input
                         value={logsUserId}
-                        onChange={(e) => setLogsUserId(e.target.value)}
+                        aria-label="Filtrer logs par userId"
+                        onChange={(e) => {
+                          setLogsUserId(e.target.value);
+                          setLogsPage(0);
+                          setLogsPrefetched(false);
+                        }}
                         placeholder="userId"
                         className="w-24 rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
                       />
+                      <select
+                        value={logsSortDir}
+                        aria-label="Trier les logs"
+                        onChange={(e) => {
+                          setLogsSortDir(e.target.value);
+                          setLogsPage(0);
+                        }}
+                        className="rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
+                      >
+                        <option value="DESC">Récents</option>
+                        <option value="ASC">Anciens</option>
+                      </select>
+                      <select
+                        value={logsLimit}
+                        aria-label="Nombre de logs par page"
+                        onChange={(e) => {
+                          setLogsLimit(Number(e.target.value));
+                          setLogsPage(0);
+                        }}
+                        className="rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
+                      >
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                        <option value={200}>200</option>
+                        <option value={500}>500</option>
+                      </select>
                       <button
                         type="button"
                         onClick={refreshAdminLogs}
+                        aria-label="Rafraichir les logs"
                         disabled={logsLoading}
                         className="px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
                       >
                         {logsLoading ? '...' : 'Rafraîchir'}
                       </button>
+                      <PaginationControls
+                        disabled={logsLoading || logsTotal <= 0}
+                        page={logsPage}
+                        maxPage={logsMaxPage}
+                        mode="range"
+                        from={logsFrom}
+                        to={logsTo}
+                        total={logsTotal}
+                        onPrev={() => setLogsPage((p) => Math.max(0, p - 1))}
+                        onNext={() =>
+                          setLogsPage((p) => Math.min(logsMaxPage, p + 1))
+                        }
+                        ariaPrev="Page précédente logs"
+                        ariaNext="Page suivante logs"
+                      />
+                      
                     </div>
                   )}
                 </div>
 
                 {supportTab === 'tickets' ? (
                   <div className="grid gap-4 lg:grid-cols-2">
-                    <div className="rounded-xl border border-slate-800/70 bg-slate-950/40 p-3">
+                    <div
+                      className={`min-w-0 rounded-xl border border-slate-800/70 bg-slate-950/40 p-3 ${
+                        selectedTicketId ? 'hidden lg:block' : ''
+                      }`}
+                    >
                       {supportTicketsLoading ? (
-                        <p className="text-sm text-slate-300">Chargement...</p>
+                        <div className="space-y-3" aria-busy="true">
+                          <div className="md:hidden">
+                            <SkeletonCards items={6} />
+                          </div>
+                          <div className="hidden md:block">
+                            <SkeletonTable rows={8} cols={5} titleWidth="w-28" />
+                          </div>
+                        </div>
                       ) : supportTickets.length === 0 ? (
                         <p className="text-sm text-slate-300">Aucun ticket.</p>
                       ) : (
-                        <div className="overflow-x-auto">
+                        <>
+                          <div className="md:hidden space-y-2">
+                            {supportTickets.map((t) => {
+                              const selected =
+                                Number(selectedTicketId) === Number(t.id);
+                              return (
+                                <button
+                                  key={`ticket-card-${t.id}`}
+                                  type="button"
+                                  onClick={() => setSelectedTicketId(t.id)}
+                                  className={`w-full text-left rounded-lg border p-3 transition-colors ${
+                                    selected
+                                      ? 'border-amber-400/50 bg-amber-500/10'
+                                      : 'border-slate-800/70 bg-slate-950/30 hover:bg-slate-900/40'
+                                  } focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70`}
+                                >
+                                  <div className="flex items-start justify-between gap-3">
+                                    <p className="text-[11px] text-amber-300 font-mono">
+                                      #{t.id}
+                                    </p>
+                                    <p className="text-[11px] text-slate-300">
+                                      {t.created_at
+                                        ? new Date(t.created_at).toLocaleString('fr-FR')
+                                        : '-'}
+                                    </p>
+                                  </div>
+
+                                  <p className="mt-1 text-sm text-slate-100 font-semibold">
+                                    {t.subject || t.category || '(sans sujet)'}
+                                  </p>
+                                  <p className="mt-1 text-[11px] text-slate-300">
+                                    {t.username || t.email || '-'}
+                                  </p>
+
+                                  <div className="mt-2 flex items-center justify-between gap-2">
+                                    <p className="text-[11px] text-slate-400 flex items-center gap-2">
+                                      <span>Status:</span> <StatusBadge status={t.status} />
+                                    </p>
+                                    <p className="text-[11px] text-slate-500 truncate">
+                                      {t.category || ''}
+                                    </p>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          <div className="hidden md:block overflow-x-auto">
                           <table className="w-full text-left text-xs">
                             <thead className="text-[11px] uppercase tracking-widest text-slate-400">
                               <tr className="border-b border-slate-800/70">
@@ -2680,18 +3896,28 @@ function AdminPage() {
                                 return (
                                   <tr
                                     key={`ticket-${t.id}`}
-                                    className={`border-b border-slate-800/60 cursor-pointer ${
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-label={`Ouvrir le ticket #${t.id}`}
+                                    aria-selected={selected}
+                                    className={`border-b border-slate-800/60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${
                                       selected
                                         ? 'bg-amber-500/10'
                                         : 'hover:bg-slate-900/40'
                                     }`}
                                     onClick={() => setSelectedTicketId(t.id)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        setSelectedTicketId(t.id);
+                                      }
+                                    }}
                                   >
                                     <td className="py-2 pr-3 font-mono text-amber-300">
                                       {t.id}
                                     </td>
                                     <td className="py-2 pr-3 text-slate-200">
-                                      {t.status || '-'}
+                                      <StatusBadge status={t.status} />
                                     </td>
                                     <td className="py-2 pr-3 text-slate-300">
                                       {t.username || t.email || '-'}
@@ -2714,21 +3940,258 @@ function AdminPage() {
                             </tbody>
                           </table>
                         </div>
+                        </>
                       )}
                     </div>
 
-                    <div className="rounded-xl border border-slate-800/70 bg-slate-950/40 p-3 space-y-3">
+                    <div
+                      className={`min-w-0 rounded-xl border border-slate-800/70 bg-slate-950/40 p-3 space-y-3 ${
+                        selectedTicketId ? '' : 'hidden lg:block'
+                      }`}
+                    >
+                      {selectedTicketId ? (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedTicketId(null)}
+                          className="lg:hidden px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
+                        >
+                          {'<'} Retour
+                        </button>
+                      ) : null}
                       <p className="text-xs text-slate-300">Détail du ticket</p>
                       {selectedTicket ? (
                         <>
                           <div className="text-sm text-slate-100">
-                            <p className="font-semibold">
-                              #{selectedTicket.id} · {selectedTicket.status}
+                            <p className="font-semibold flex flex-wrap items-center gap-2">
+                              <span className="font-mono text-amber-300">
+                                #{selectedTicket.id}
+                              </span>
+                              <StatusBadge status={selectedTicket.status} />
                             </p>
+
+                            
                             <p className="text-xs text-slate-400 mt-1">
                               {selectedTicket.username || '-'} ·{' '}
                               {selectedTicket.email || '-'}
                             </p>
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              <ActionMenu
+                                ariaLabel="Actions rapides ticket"
+                                triggerLabel="Copier"
+                                items={[
+                                  {
+                                    key: 'copy-id',
+                                    label: `Copier ID (#${selectedTicket.id})`,
+                                    onClick: () => copyWithToast(selectedTicket.id, 'ID'),
+                                  },
+                                  {
+                                    key: 'copy-email',
+                                    label: 'Copier email',
+                                    disabled: !normalizeText(selectedTicket.email),
+                                    onClick: () => copyWithToast(selectedTicket.email, 'Email'),
+                                  },
+                                  {
+                                    key: 'copy-ip',
+                                    label: 'Copier IP',
+                                    disabled: !normalizeText(selectedTicket.ip_address),
+                                    onClick: () => copyWithToast(selectedTicket.ip_address, 'IP'),
+                                  },
+                                  {
+                                    key: 'copy-ua',
+                                    label: 'Copier User-Agent',
+                                    disabled: !normalizeText(selectedTicket.user_agent),
+                                    onClick: () =>
+                                      copyWithToast(selectedTicket.user_agent, 'User-Agent'),
+                                  },
+                                  {
+                                    key: 'copy-page',
+                                    label: 'Copier URL page',
+                                    disabled: !normalizeText(selectedTicket.page_url),
+                                    onClick: () => copyWithToast(selectedTicket.page_url, 'URL page'),
+                                  },
+                                  {
+                                    key: 'open-page',
+                                    label: 'Ouvrir page',
+                                    disabled: !normalizeText(selectedTicket.page_url),
+                                    onClick: () => {
+                                      if (!normalizeText(selectedTicket.page_url)) return;
+                                      window.open(
+                                        selectedTicket.page_url,
+                                        '_blank',
+                                        'noopener,noreferrer'
+                                      );
+                                    },
+                                  },
+                                ]}
+                              />
+                              {selectedTicket.page_url ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    window.open(
+                                      selectedTicket.page_url,
+                                      '_blank',
+                                      'noopener,noreferrer'
+                                    )
+                                  }
+                                  className="px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
+                                >
+                                  Ouvrir page
+                                </button>
+                              ) : null}
+                            </div>
+                          </div>
+
+                          <div className="rounded-lg border border-slate-800/70 bg-black/20 p-3 space-y-2">
+                            <p className="text-xs text-slate-300 font-semibold">
+                              Infos techniques
+                            </p>
+                            <dl className="grid gap-2 sm:grid-cols-2 text-[11px] text-slate-300">
+                              <div>
+                                <dt className="uppercase tracking-widest text-slate-500">
+                                  Catégorie
+                                </dt>
+                                <dd className="mt-0.5 text-slate-200">
+                                  {selectedTicket.category || '-'}
+                                </dd>
+                              </div>
+
+                              <div>
+                                <dt className="uppercase tracking-widest text-slate-500">
+                                  Date serveur
+                                </dt>
+                                <dd className="mt-0.5 text-slate-200 font-mono">
+                                  {selectedTicket.created_at
+                                    ? new Date(selectedTicket.created_at).toLocaleString(
+                                        'fr-FR'
+                                      )
+                                    : '-'}
+                                </dd>
+                              </div>
+
+                              <div>
+                                <dt className="uppercase tracking-widest text-slate-500">
+                                  IP
+                                </dt>
+                                <dd className="mt-0.5 text-slate-200 font-mono">
+                                  {selectedTicket.ip_address || '-'}
+                                </dd>
+                              </div>
+
+                              <div>
+                                <dt className="uppercase tracking-widest text-slate-500">
+                                  Heure client
+                                </dt>
+                                <dd
+                                  className="mt-0.5 text-slate-200 font-mono"
+                                  title={selectedTicket.client_time_iso || ''}
+                                >
+                                  {selectedTicket.client_time_iso
+                                    ? new Date(
+                                        selectedTicket.client_time_iso
+                                      ).toLocaleString('fr-FR')
+                                    : '-'}
+                                </dd>
+                              </div>
+
+                              <div className="sm:col-span-2">
+                                <dt className="uppercase tracking-widest text-slate-500">
+                                  Page
+                                </dt>
+                                <dd className="mt-0.5 text-slate-200 break-all">
+                                  {selectedTicket.page_url ? (
+                                    <div className="flex items-start justify-between gap-2">
+                                      <a
+                                        href={selectedTicket.page_url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-amber-200 hover:text-amber-100 underline underline-offset-2 break-all"
+                                        title={selectedTicket.page_url}
+                                      >
+                                        {selectedTicket.page_url}
+                                      </a>
+                                      <div className="shrink-0 flex items-center gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            window.open(
+                                              selectedTicket.page_url,
+                                              '_blank',
+                                              'noopener,noreferrer'
+                                            )
+                                          }
+                                          className="px-2 py-1 rounded-md border border-slate-700 text-[11px] text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
+                                        >
+                                          Ouvrir
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            copyWithToast(selectedTicket.page_url, 'URL page')
+                                          }
+                                          className="px-2 py-1 rounded-md border border-slate-700 text-[11px] text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
+                                        >
+                                          Copier
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    '-'
+                                  )}
+                                </dd>
+                              </div>
+
+                              <div className="sm:col-span-2">
+                                <KeyValueRow
+                                  label="User-Agent"
+                                  value={selectedTicket.user_agent || '-'}
+                                  mono
+                                  actions={
+                                    <CopyButton
+                                      value={selectedTicket.user_agent}
+                                      label="Copier UA"
+                                      ariaLabel="Copier User-Agent"
+                                      disabled={!normalizeText(selectedTicket.user_agent)}
+                                      className="px-2 py-1 rounded-md text-[11px]"
+                                      onCopied={(ok) =>
+                                        setToast(
+                                          ok
+                                            ? {
+                                                type: 'success',
+                                                message: 'User-Agent copié.',
+                                              }
+                                            : {
+                                                type: 'error',
+                                                message:
+                                                  'Impossible de copier User-Agent.',
+                                              }
+                                        )
+                                      }
+                                    />
+                                  }
+                                />
+                              </div>
+
+                              
+                            </dl>
+
+                            {selectedTicket.client_meta ? (
+                              <A11yDetails
+                                className="pt-1"
+                                summary="Client meta"
+                                summaryClassName="list-none [&::-webkit-details-marker]:hidden cursor-pointer text-[11px] text-slate-300 hover:text-slate-200"
+                              >
+                                <pre className="mt-2 whitespace-pre-wrap text-[11px] text-slate-200 font-mono rounded-md border border-slate-800/70 bg-slate-950/40 p-2 max-h-48 overflow-y-auto">
+                                  {typeof selectedTicket.client_meta === 'string'
+                                    ? selectedTicket.client_meta
+                                    : JSON.stringify(
+                                        selectedTicket.client_meta,
+                                        null,
+                                        2
+                                      )}
+                                </pre>
+                              </A11yDetails>
+                            ) : null}
                           </div>
 
                           <div className="rounded-lg border border-slate-800/70 bg-black/20 p-3">
@@ -2771,11 +4234,60 @@ function AdminPage() {
                 ) : (
                   <div className="rounded-xl border border-slate-800/70 bg-slate-950/40 p-3">
                     {logsLoading ? (
-                      <p className="text-sm text-slate-300">Chargement...</p>
+                      <div className="space-y-3" aria-busy="true">
+                        <div className="md:hidden">
+                          <SkeletonCards items={6} />
+                        </div>
+                        <div className="hidden md:block">
+                          <SkeletonTable rows={10} cols={6} titleWidth="w-24" />
+                        </div>
+                      </div>
                     ) : filteredLogs.length === 0 ? (
                       <p className="text-sm text-slate-300">Aucun log.</p>
                     ) : (
-                      <div className="overflow-x-auto">
+                      <>
+                        <div className="md:hidden space-y-2">
+                          {filteredLogs.map((l) => (
+                            <div
+                              key={`log-card-${l.id}`}
+                              className="rounded-lg border border-slate-800/70 bg-slate-950/30 p-3"
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <p className="text-[11px] text-slate-400 font-mono">
+                                  {l.created_at
+                                    ? new Date(l.created_at).toLocaleString('fr-FR')
+                                    : '-'}
+                                </p>
+                                <p className="text-[11px] text-slate-300 font-mono">
+                                  user:{' '}
+                                  <span className="text-slate-200">
+                                    {l.user_id ?? '-'}
+                                  </span>
+                                </p>
+                              </div>
+
+                              <p className="mt-1 text-sm text-slate-100 font-semibold">
+                                {l.action_type || '-'}
+                              </p>
+                              <p className="mt-0.5 text-[11px] text-slate-300">
+                                {l.target_table || '-'}{' '}
+                                <span className="text-slate-500 font-mono">
+                                  #{l.target_id ?? '-'}
+                                </span>
+                              </p>
+
+                              {l.description ? (
+                                <p className="mt-2 text-[11px] text-slate-200 whitespace-pre-wrap">
+                                  {l.description}
+                                </p>
+                              ) : (
+                                <p className="mt-2 text-[11px] text-slate-400">-</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="hidden md:block overflow-x-auto">
                         <table className="min-w-[900px] w-full text-left text-xs">
                           <thead className="text-[11px] uppercase tracking-widest text-slate-400">
                             <tr className="border-b border-slate-800/70">
@@ -2820,6 +4332,7 @@ function AdminPage() {
                           </tbody>
                         </table>
                       </div>
+                      </>
                     )}
                   </div>
                 )}
@@ -2933,12 +4446,103 @@ function AdminPage() {
                 )}
 
                 {endgameLoading ? (
-                  <p className="text-sm text-slate-300">Chargement...</p>
+                  <div className="space-y-3" aria-busy="true">
+                    <div className="md:hidden">
+                      <SkeletonCards items={6} />
+                    </div>
+                    <div className="hidden md:block">
+                      <SkeletonTable rows={8} cols={5} titleWidth="w-32" />
+                    </div>
+                  </div>
                 ) : endgameTab === 'requirements' ? (
                   (endgameRequirements || []).filter(matchesSearch).length === 0 ? (
                     <p className="text-sm text-slate-300">Aucun résultat.</p>
                   ) : (
-                    <div className="overflow-x-auto">
+                    <>
+                      <div className="md:hidden space-y-2">
+                        {(endgameRequirements || [])
+                          .filter(matchesSearch)
+                          .map((row) => {
+                               const type = 'endgame_requirements';
+                               const r = mergedRow(type, row);
+                               const busy = isRowSaving(type, row.id);
+                               const canSave = getRowDiffs(type, row).length > 0;
+ 
+                            return (
+                              <div
+                                key={`endgame-req-card-${row.id}`}
+                                className="rounded-lg border border-slate-800/70 bg-slate-950/30 p-3 space-y-2"
+                              >
+                                <div className="flex items-center justify-between gap-3">
+                                  <p className="text-[11px] text-amber-300 font-mono">
+                                    #{row.id}
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                    Ressource
+                                  </p>
+                                  <select
+                                    className={inputClass}
+                                    value={r.resource_id ?? ''}
+                                    onChange={(e) =>
+                                      updateField(type, row.id, 'resource_id', e.target.value)
+                                    }
+                                  >
+                                    <option value="">Ressource</option>
+                                    {sortedResources.map((res) => (
+                                      <option
+                                        key={`endgame-req-res-mobile-${row.id}-${res.id}`}
+                                        value={res.id}
+                                      >
+                                        {res.code} - {res.name} (#{res.id})
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                <div>
+                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                    Montant
+                                  </p>
+                                  <input
+                                    className={inputClass}
+                                    inputMode="decimal"
+                                    value={r.amount ?? ''}
+                                    onChange={(e) =>
+                                      updateField(type, row.id, 'amount', e.target.value)
+                                    }
+                                  />
+                                </div>
+
+                                <div className="flex flex-wrap gap-2 justify-end pt-1">
+                                  <button
+                                    type="button"
+                                     disabled={busy || !canSave}
+                                    onClick={() => requestSave(type, row)}
+                                    className="px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed text-slate-900 font-semibold transition-colors text-xs"
+                                  >
+                                    {busy ? 'Sauvegarde…' : 'Sauvegarder'}
+                                  </button>
+                                  <ActionMenu
+                                    ariaLabel="Actions"
+                                    items={[
+                                      {
+                                        key: 'delete',
+                                        label: 'Supprimer',
+                                        danger: true,
+                                        onClick: () => requestDelete(type, row),
+                                      },
+                                    ]}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+
+                      <div className="hidden md:block overflow-x-auto">
                       <table className="min-w-[900px] w-full text-left text-xs">
                         <thead className="text-[11px] uppercase tracking-widest text-slate-400">
                           <tr className="border-b border-amber-500/20">
@@ -2955,6 +4559,7 @@ function AdminPage() {
                               const type = 'endgame_requirements';
                               const r = mergedRow(type, row);
                               const busy = isRowSaving(type, row.id);
+                              const canSave = getRowDiffs(type, row).length > 0;
 
                               return (
                                 <tr
@@ -3002,7 +4607,7 @@ function AdminPage() {
                                     <div className="flex flex-wrap gap-2">
                                       <button
                                         type="button"
-                                        disabled={busy}
+                                        disabled={busy || !canSave}
                                         onClick={() => requestSave(type, row)}
                                         className="px-3 py-1 rounded-md bg-amber-500 hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed text-slate-900 font-semibold transition-colors"
                                       >
@@ -3023,13 +4628,83 @@ function AdminPage() {
                         </tbody>
                       </table>
                     </div>
+                    </>
                   )
                 ) : (
                   <div className="rounded-xl border border-slate-800/70 bg-slate-950/40 p-3">
                     {(endgameRankings || []).filter(matchesSearch).length === 0 ? (
                       <p className="text-sm text-slate-300">Aucun résultat.</p>
                     ) : (
-                      <div className="overflow-x-auto">
+                      <>
+                        <div className="md:hidden space-y-2">
+                          {(endgameRankings || [])
+                            .filter(matchesSearch)
+                            .map((row, idx) => (
+                              <A11yDetails
+                                key={`endgame-rank-card-${row?.id ?? idx}`}
+                                className="rounded-lg border border-slate-800/70 bg-slate-950/30 p-3"
+                                summaryClassName="list-none [&::-webkit-details-marker]:hidden cursor-pointer select-none"
+                                summary={
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                      <p className="text-sm text-slate-100 font-semibold">
+                                        {row?.username
+                                          ? `${row.username} (#${row.user_id})`
+                                          : row?.user_id ?? '-'}
+                                      </p>
+                                      <p className="text-[11px] text-amber-300 font-mono mt-0.5">
+                                        #{row?.id ?? '-'}
+                                      </p>
+                                    </div>
+                                    <p className="text-[11px] text-slate-300">
+                                      {formatDurationSeconds(
+                                        row?.completion_seconds ?? row?.playtime_seconds
+                                      )}
+                                    </p>
+                                  </div>
+                                }
+                              >
+
+                                <div className="pt-3 space-y-2 text-[11px] text-slate-300">
+                                  <div className="grid gap-2 sm:grid-cols-2">
+                                    <div>
+                                      <p className="uppercase tracking-widest text-slate-500">
+                                        Complété le
+                                      </p>
+                                      <p className="text-slate-200 font-mono">
+                                        {row?.completed_at
+                                          ? new Date(row.completed_at).toLocaleString('fr-FR')
+                                          : '-'}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="uppercase tracking-widest text-slate-500">
+                                        Temps (s)
+                                      </p>
+                                      <p className="text-slate-200 font-mono">
+                                        {row?.completion_seconds != null
+                                          ? `${row.completion_seconds}s`
+                                          : row?.playtime_seconds != null
+                                            ? `${row.playtime_seconds}s`
+                                            : '-'}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <A11yDetailsWrap summaryClassName="list-none [&::-webkit-details-marker]:hidden cursor-pointer text-slate-200">
+                                    <summary className="list-none [&::-webkit-details-marker]:hidden cursor-pointer text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
+                                      Données (JSON)
+                                    </summary>
+                                    <pre className="mt-2 whitespace-pre-wrap text-[11px] leading-5 rounded-md border border-slate-800/70 bg-slate-950/40 p-2 max-h-60 overflow-y-auto">
+                                      {JSON.stringify(row, null, 2)}
+                                    </pre>
+                                  </A11yDetailsWrap>
+                                </div>
+                              </A11yDetails>
+                            ))}
+                        </div>
+
+                        <div className="hidden md:block overflow-x-auto">
                         <table className="min-w-[900px] w-full text-left text-xs">
                           <thead className="text-[11px] uppercase tracking-widest text-slate-400">
                             <tr className="border-b border-slate-800/70">
@@ -3051,19 +4726,23 @@ function AdminPage() {
                                   <td className="py-2 pr-3 font-mono text-amber-300">
                                     {row?.id ?? '-'}
                                   </td>
-                                  <td className="py-2 pr-3 text-slate-300 font-mono">
-                                    {row?.user_id ?? '-'}
-                                  </td>
+                                <td className="py-2 pr-3 text-slate-300 font-mono">
+                                  {row?.username ? `${row.username} (#${row.user_id})` : row?.user_id ?? '-'}
+                                </td>
                                   <td className="py-2 pr-3 text-slate-300">
                                     {row?.completed_at
                                       ? new Date(row.completed_at).toLocaleString('fr-FR')
                                       : '-'}
                                   </td>
                                   <td className="py-2 pr-3 text-slate-300 font-mono">
-                                    {formatDurationSeconds(row?.playtime_seconds)}
-                                    {row?.playtime_seconds != null
-                                      ? ` (${row.playtime_seconds}s)`
-                                      : ''}
+                                    {formatDurationSeconds(
+                                      row?.completion_seconds ?? row?.playtime_seconds
+                                    )}
+                                    {row?.completion_seconds != null
+                                      ? ` (${row.completion_seconds}s)`
+                                      : row?.playtime_seconds != null
+                                        ? ` (${row.playtime_seconds}s)`
+                                        : ''}
                                   </td>
                                   <td className="py-2 text-slate-300 font-mono">
                                     <pre className="whitespace-pre-wrap text-[11px] leading-5 max-w-[680px]">
@@ -3075,16 +4754,698 @@ function AdminPage() {
                           </tbody>
                         </table>
                       </div>
+                      </>
                     )}
                   </div>
                 )}
               </div>
             ) : loading ? (
-              <p className="text-sm text-slate-300">Chargement…</p>
+              <div className="space-y-3" aria-busy="true">
+                <div className="md:hidden">
+                  <SkeletonCards items={6} />
+                </div>
+                <div className="hidden md:block">
+                  <SkeletonTable
+                    rows={10}
+                    cols={activeTab === 'realm_unlock_costs' ? 4 : 6}
+                    titleWidth="w-28"
+                  />
+                </div>
+              </div>
             ) : visibleRows.length === 0 ? (
               <p className="text-sm text-slate-300">Aucun résultat.</p>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+                <div className="md:hidden space-y-2">
+                  {visibleRows.map((row) => {
+                    const type = activeTab;
+                    const r = mergedRow(type, row);
+                    const busy = isRowSaving(type, row.id);
+                    const canSave = getRowDiffs(type, row).length > 0;
+
+                    const headerLabel =
+                      activeTab === 'realms'
+                        ? `${r.code || row.code || ''} ${r.name || row.name || ''}`.trim()
+                        : activeTab === 'realm_unlock_costs'
+                          ? `Coût #${row.id}`
+                          : `${r.code || row.code || ''} ${r.name || row.name || ''}`.trim();
+
+                    const saveButton = (
+                      <button
+                        type="button"
+                        disabled={busy || !canSave}
+                        onClick={() => requestSave(type, row)}
+                        className="px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed text-slate-900 font-semibold transition-colors text-xs"
+                      >
+                        {busy ? 'Sauvegarde…' : 'Sauvegarder'}
+                      </button>
+                    );
+
+                    return (
+                      <A11yDetailsWrap
+                        key={`balance-card-${type}-${row.id}`}
+                        className="rounded-lg border border-slate-800/70 bg-slate-950/30 p-3"
+                        summaryClassName="list-none [&::-webkit-details-marker]:hidden cursor-pointer select-none"
+                      >
+                        <summary className="cursor-pointer select-none">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm text-slate-100 font-semibold">
+                                {headerLabel || '(sans libellé)'}
+                              </p>
+                              <p className="text-[11px] text-slate-500 font-mono mt-0.5">
+                                #{row.id}
+                              </p>
+                            </div>
+                            <p className="text-[11px] text-slate-400 mt-0.5">
+                              Ouvrir
+                            </p>
+                          </div>
+                        </summary>
+
+                        <div className="pt-3 space-y-3">
+                          {activeTab === 'realms' && (
+                            <>
+                              <div className="grid gap-2 sm:grid-cols-2">
+                                <div>
+                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                    Code
+                                  </p>
+                                  <input
+                                    className={inputClass}
+                                    value={r.code ?? ''}
+                                    onChange={(e) =>
+                                      updateField('realms', row.id, 'code', e.target.value)
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                    Nom
+                                  </p>
+                                  <input
+                                    className={inputClass}
+                                    value={r.name ?? ''}
+                                    onChange={(e) =>
+                                      updateField('realms', row.id, 'name', e.target.value)
+                                    }
+                                  />
+                                </div>
+                              </div>
+                              <div>
+                                <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                  Description
+                                </p>
+                                <input
+                                  className={inputClass}
+                                  value={r.description ?? ''}
+                                  onChange={(e) =>
+                                    updateField(
+                                      'realms',
+                                      row.id,
+                                      'description',
+                                      e.target.value
+                                    )
+                                  }
+                                />
+                              </div>
+                              <div>
+                                <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                  Coûts
+                                </p>
+                                {(() => {
+                                  const costs =
+                                    Array.isArray(row.unlockCosts) && row.unlockCosts.length > 0
+                                      ? row.unlockCosts
+                                      : realmUnlockCostsByRealmId.get(Number(row.id)) || [];
+                                  if (costs.length === 0) {
+                                    return (
+                                      <p className="text-xs text-slate-400 mt-1">-</p>
+                                    );
+                                  }
+                                  return (
+                                    <ul className="mt-1 space-y-0.5">
+                                      {costs.map((c) => {
+                                        const resourceId = Number(
+                                          c.resourceId ?? c.resource_id
+                                        );
+                                        const amount = Number(c.amount ?? 0);
+                                        const label =
+                                          c.resourceName ||
+                                          c.resource_name ||
+                                          resources.find(
+                                            (res) => Number(res.id) === resourceId
+                                          )?.name ||
+                                          resources.find(
+                                            (res) => Number(res.id) === resourceId
+                                          )?.code ||
+                                          c.resourceCode ||
+                                          c.resource_code ||
+                                          `#${resourceId}`;
+
+                                        return (
+                                          <li
+                                            key={`realm-cost-mobile-${row.id}-${resourceId}-${amount}`}
+                                            className="text-xs text-slate-200"
+                                          >
+                                            <span className="font-mono text-amber-200">
+                                              {amount}
+                                            </span>{' '}
+                                            <span className="text-slate-300">
+                                              {label}
+                                            </span>
+                                          </li>
+                                        );
+                                      })}
+                                    </ul>
+                                  );
+                                })()}
+                              </div>
+                              <label className="inline-flex items-center gap-2 text-xs text-slate-200">
+                                <input
+                                  type="checkbox"
+                                  checked={!!r.is_default_unlocked}
+                                  onChange={(e) =>
+                                    updateField(
+                                      'realms',
+                                      row.id,
+                                      'is_default_unlocked',
+                                      e.target.checked
+                                    )
+                                  }
+                                  className="accent-amber-400"
+                                />
+                                Default
+                              </label>
+                            </>
+                          )}
+
+                          {activeTab === 'realm_unlock_costs' && (
+                            <div className="grid gap-2">
+                              <div>
+                                <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                  Royaume
+                                </p>
+                                <select
+                                  className={inputClass}
+                                  value={r.target_realm_id ?? ''}
+                                  onChange={(e) =>
+                                    updateField(
+                                      'realm_unlock_costs',
+                                      row.id,
+                                      'target_realm_id',
+                                      e.target.value
+                                    )
+                                  }
+                                >
+                                  <option value="">-</option>
+                                  {realms.map((realm) => (
+                                    <option
+                                      key={`realm-opt-mobile-${realm.id}`}
+                                      value={realm.id}
+                                    >
+                                      {realm.code} (#{realm.id})
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div>
+                                <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                  Ressource
+                                </p>
+                                <select
+                                  className={inputClass}
+                                  value={r.resource_id ?? ''}
+                                  onChange={(e) =>
+                                    updateField(
+                                      'realm_unlock_costs',
+                                      row.id,
+                                      'resource_id',
+                                      e.target.value
+                                    )
+                                  }
+                                >
+                                  <option value="">-</option>
+                                  {resources.map((res) => (
+                                    <option
+                                      key={`res-opt-mobile-${res.id}`}
+                                      value={res.id}
+                                    >
+                                      {res.code} (#{res.id})
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div>
+                                <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                  Montant
+                                </p>
+                                <input
+                                  className={inputClass}
+                                  inputMode="decimal"
+                                  value={r.amount ?? ''}
+                                  onChange={(e) =>
+                                    updateField(
+                                      'realm_unlock_costs',
+                                      row.id,
+                                      'amount',
+                                      e.target.value
+                                    )
+                                  }
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {activeTab === 'resources' && (
+                            <div className="grid gap-2">
+                              <div className="grid gap-2 sm:grid-cols-2">
+                                <div>
+                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                    Realm ID
+                                  </p>
+                                  <input
+                                    className={inputClass}
+                                    inputMode="numeric"
+                                    value={r.realm_id ?? ''}
+                                    onChange={(e) =>
+                                      updateField(
+                                        'resources',
+                                        row.id,
+                                        'realm_id',
+                                        e.target.value
+                                      )
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                    Code
+                                  </p>
+                                  <input
+                                    className={inputClass}
+                                    value={r.code ?? ''}
+                                    onChange={(e) =>
+                                      updateField(
+                                        'resources',
+                                        row.id,
+                                        'code',
+                                        e.target.value
+                                      )
+                                    }
+                                  />
+                                </div>
+                              </div>
+                              <div>
+                                <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                  Nom
+                                </p>
+                                <input
+                                  className={inputClass}
+                                  value={r.name ?? ''}
+                                  onChange={(e) =>
+                                    updateField(
+                                      'resources',
+                                      row.id,
+                                      'name',
+                                      e.target.value
+                                    )
+                                  }
+                                />
+                              </div>
+                              <div>
+                                <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                  Description
+                                </p>
+                                <input
+                                  className={inputClass}
+                                  value={r.description ?? ''}
+                                  onChange={(e) =>
+                                    updateField(
+                                      'resources',
+                                      row.id,
+                                      'description',
+                                      e.target.value
+                                    )
+                                  }
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {activeTab === 'factories' && (
+                            <div className="hidden">
+                              Édition complète disponible sur desktop.
+                            </div>
+                          )}
+
+                          {activeTab === 'factories' && (
+                            <div className="grid gap-2">
+                              <div>
+                                <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                  Royaume
+                                </p>
+                                <select
+                                  className={inputClass}
+                                  value={r.realm_id ?? ''}
+                                  onChange={(e) =>
+                                    updateField('factories', row.id, 'realm_id', e.target.value)
+                                  }
+                                >
+                                  <option value="">Royaume</option>
+                                  {sortedRealms.map((realm) => (
+                                    <option
+                                      key={`factory-realm-mobile-${row.id}-${realm.id}`}
+                                      value={realm.id}
+                                    >
+                                      {realm.code} - {realm.name} (#{realm.id})
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div>
+                                <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                  Ressource
+                                </p>
+                                <select
+                                  className={inputClass}
+                                  value={r.resource_id ?? ''}
+                                  onChange={(e) =>
+                                    updateField('factories', row.id, 'resource_id', e.target.value)
+                                  }
+                                >
+                                  <option value="">Ressource</option>
+                                  {sortedResources.map((res) => (
+                                    <option
+                                      key={`factory-res-mobile-${row.id}-${res.id}`}
+                                      value={res.id}
+                                    >
+                                      {res.code} - {res.name} (#{res.id})
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div className="grid gap-2 sm:grid-cols-2">
+                                <div>
+                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                    Code
+                                  </p>
+                                  <input
+                                    className={inputClass}
+                                    value={r.code ?? ''}
+                                    onChange={(e) =>
+                                      updateField('factories', row.id, 'code', e.target.value)
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                    Nom
+                                  </p>
+                                  <input
+                                    className={inputClass}
+                                    value={r.name ?? ''}
+                                    onChange={(e) =>
+                                      updateField('factories', row.id, 'name', e.target.value)
+                                    }
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="grid gap-2 sm:grid-cols-2">
+                                <div>
+                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                    Base prod
+                                  </p>
+                                  <input
+                                    className={inputClass}
+                                    inputMode="decimal"
+                                    value={r.base_production ?? ''}
+                                    onChange={(e) =>
+                                      updateField(
+                                        'factories',
+                                        row.id,
+                                        'base_production',
+                                        e.target.value
+                                      )
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                    Base cost
+                                  </p>
+                                  <input
+                                    className={inputClass}
+                                    inputMode="decimal"
+                                    value={r.base_cost ?? ''}
+                                    onChange={(e) =>
+                                      updateField('factories', row.id, 'base_cost', e.target.value)
+                                    }
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="grid gap-2 sm:grid-cols-2 items-end">
+                                <div>
+                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                    Order
+                                  </p>
+                                  <input
+                                    className={inputClass}
+                                    inputMode="numeric"
+                                    value={r.unlock_order ?? ''}
+                                    onChange={(e) =>
+                                      updateField(
+                                        'factories',
+                                        row.id,
+                                        'unlock_order',
+                                        e.target.value
+                                      )
+                                    }
+                                  />
+                                </div>
+                                <label className="inline-flex items-center gap-2 text-xs text-slate-200">
+                                  <input
+                                    type="checkbox"
+                                    checked={!!r.is_active}
+                                    onChange={(e) =>
+                                      updateField(
+                                        'factories',
+                                        row.id,
+                                        'is_active',
+                                        e.target.checked
+                                      )
+                                    }
+                                    className="accent-amber-400"
+                                  />
+                                  Active
+                                </label>
+                              </div>
+                            </div>
+                          )}
+
+                          {activeTab === 'skills' && (
+                            <div className="grid gap-2">
+                              <div>
+                                <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                  Royaume
+                                </p>
+                                <select
+                                  className={inputClass}
+                                  value={r.realm_id ?? ''}
+                                  onChange={(e) =>
+                                    updateField('skills', row.id, 'realm_id', e.target.value)
+                                  }
+                                >
+                                  <option value="">Royaume</option>
+                                  {sortedRealms.map((realm) => (
+                                    <option
+                                      key={`skill-realm-mobile-${row.id}-${realm.id}`}
+                                      value={realm.id}
+                                    >
+                                      {realm.code} - {realm.name} (#{realm.id})
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div className="grid gap-2 sm:grid-cols-2">
+                                <div>
+                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                    Code
+                                  </p>
+                                  <input
+                                    className={inputClass}
+                                    value={r.code ?? ''}
+                                    onChange={(e) =>
+                                      updateField('skills', row.id, 'code', e.target.value)
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                    Nom
+                                  </p>
+                                  <input
+                                    className={inputClass}
+                                    value={r.name ?? ''}
+                                    onChange={(e) =>
+                                      updateField('skills', row.id, 'name', e.target.value)
+                                    }
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="grid gap-2 sm:grid-cols-2">
+                                <div>
+                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                    Type
+                                  </p>
+                                  <input
+                                    className={inputClass}
+                                    value={r.effect_type ?? ''}
+                                    onChange={(e) =>
+                                      updateField('skills', row.id, 'effect_type', e.target.value)
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                    Value
+                                  </p>
+                                  <input
+                                    className={inputClass}
+                                    inputMode="decimal"
+                                    value={r.effect_value ?? ''}
+                                    onChange={(e) =>
+                                      updateField('skills', row.id, 'effect_value', e.target.value)
+                                    }
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="grid gap-2 sm:grid-cols-2">
+                                <div>
+                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                    Max
+                                  </p>
+                                  <input
+                                    className={inputClass}
+                                    inputMode="numeric"
+                                    value={r.max_level ?? ''}
+                                    onChange={(e) =>
+                                      updateField('skills', row.id, 'max_level', e.target.value)
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                    Order
+                                  </p>
+                                  <input
+                                    className={inputClass}
+                                    inputMode="numeric"
+                                    value={r.unlock_order ?? ''}
+                                    onChange={(e) =>
+                                      updateField('skills', row.id, 'unlock_order', e.target.value)
+                                    }
+                                  />
+                                </div>
+                              </div>
+
+                              <div>
+                                <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                  Cost res
+                                </p>
+                                <select
+                                  className={inputClass}
+                                  value={r.base_cost_resource_id ?? ''}
+                                  onChange={(e) =>
+                                    updateField(
+                                      'skills',
+                                      row.id,
+                                      'base_cost_resource_id',
+                                      e.target.value
+                                    )
+                                  }
+                                >
+                                  <option value="">Ressource</option>
+                                  {sortedResources.map((res) => (
+                                    <option
+                                      key={`skill-costres-mobile-${row.id}-${res.id}`}
+                                      value={res.id}
+                                    >
+                                      {res.code} - {res.name} (#{res.id})
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div className="grid gap-2 sm:grid-cols-2">
+                                <div>
+                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                    Base cost
+                                  </p>
+                                  <input
+                                    className={inputClass}
+                                    inputMode="decimal"
+                                    value={r.base_cost_amount ?? ''}
+                                    onChange={(e) =>
+                                      updateField(
+                                        'skills',
+                                        row.id,
+                                        'base_cost_amount',
+                                        e.target.value
+                                      )
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                                    Growth
+                                  </p>
+                                  <input
+                                    className={inputClass}
+                                    inputMode="decimal"
+                                    value={r.cost_growth_factor ?? ''}
+                                    onChange={(e) =>
+                                      updateField(
+                                        'skills',
+                                        row.id,
+                                        'cost_growth_factor',
+                                        e.target.value
+                                      )
+                                    }
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="flex flex-wrap gap-2 justify-end pt-1">
+                            {saveButton}
+                            <ActionMenu
+                              ariaLabel="Actions"
+                              items={[
+                                {
+                                  key: 'delete',
+                                  label: 'Supprimer',
+                                  danger: true,
+                                  onClick: () => requestDelete(type, row),
+                                },
+                              ]}
+                            />
+                          </div>
+                        </div>
+                      </A11yDetailsWrap>
+                    );
+                  })}
+                </div>
+
+                <div className="hidden md:block overflow-x-auto">
                 <table className="min-w-[900px] w-full text-left text-xs">
                   <thead className="text-[11px] uppercase tracking-widest text-slate-400">
                     <tr className="border-b border-amber-500/20">
@@ -3155,11 +5516,12 @@ function AdminPage() {
                       const type = activeTab;
                       const r = mergedRow(type, row);
                       const busy = isRowSaving(type, row.id);
+                      const canSave = getRowDiffs(type, row).length > 0;
 
                       const saveButton = (
                         <button
                           type="button"
-                          disabled={busy}
+                          disabled={busy || !canSave}
                           onClick={() => requestSave(type, row)}
                           className="px-3 py-1 rounded-md bg-amber-500 hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed text-slate-900 font-semibold transition-colors"
                         >
@@ -3708,6 +6070,7 @@ function AdminPage() {
                   </tbody>
                 </table>
               </div>
+              </>
             )}
           </div>
         </div>
