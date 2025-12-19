@@ -1,4 +1,5 @@
 import TableShell from '../../ui/TableShell';
+import UnlockCostsEditor from './UnlockCostsEditor';
 
 export default function BalanceRowTable({
   activeTab,
@@ -22,8 +23,6 @@ export default function BalanceRowTable({
   const onSave = requestSave || (() => {});
   const onDelete = requestDelete || (() => {});
   const onUpdate = updateField || (() => {});
-  const unlockCostsByRealm =
-    realmUnlockCostsByRealmId instanceof Map ? realmUnlockCostsByRealmId : new Map();
 
   return (
     <TableShell className="hidden md:block" asChild>
@@ -124,11 +123,6 @@ export default function BalanceRowTable({
             );
 
             if (activeTab === 'realms') {
-              const costs =
-                Array.isArray(row.unlockCosts) && row.unlockCosts.length > 0
-                  ? row.unlockCosts
-                  : unlockCostsByRealm.get(Number(row.id)) || [];
-
               return (
                 <tr key={`realms-${row.id}`} className="border-b border-slate-800/60">
                   <td className="py-2 pr-3 font-mono text-amber-300">{row.id}</td>
@@ -156,34 +150,12 @@ export default function BalanceRowTable({
                     />
                   </td>
                   <td className="py-2 pr-3">
-                    {costs.length === 0 ? (
-                      <span className="text-slate-500">-</span>
-                    ) : (
-                      <ul className="space-y-0.5">
-                        {costs.map((c) => {
-                          const resourceId = Number(c.resourceId ?? c.resource_id);
-                          const amount = Number(c.amount ?? 0);
-                          const label =
-                            c.resourceName ||
-                            c.resource_name ||
-                            resources.find((res) => Number(res.id) === resourceId)?.name ||
-                            resources.find((res) => Number(res.id) === resourceId)?.code ||
-                            c.resourceCode ||
-                            c.resource_code ||
-                            `#${resourceId}`;
-
-                          return (
-                            <li
-                              key={`realm-cost-${row.id}-${resourceId}-${amount}`}
-                              className="text-[11px] text-slate-200"
-                            >
-                              <span className="font-mono text-amber-200">{amount}</span>{' '}
-                              <span className="text-slate-300">{label}</span>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    )}
+                    <UnlockCostsEditor
+                      realmId={row.id}
+                      unlockCostsByRealmId={realmUnlockCostsByRealmId}
+                      unlockCosts={row.unlockCosts}
+                      resources={resources}
+                    />
                   </td>
                   <td className="py-2 pr-3">
                     <label className="inline-flex items-center gap-2 text-xs text-slate-200">
