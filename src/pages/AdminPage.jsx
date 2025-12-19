@@ -9,9 +9,15 @@ import CopyButton from '../components/ui/CopyButton';
 import Badge from '../components/ui/Badge';
 import KeyValueRow from '../components/ui/KeyValueRow';
 import PaginationControls from '../components/ui/PaginationControls';
+import TableShell from '../components/ui/TableShell';
 import SkeletonCards from '../components/ui/SkeletonCards';
 import SkeletonTable from '../components/ui/SkeletonTable';
 import StatusBadge from '../components/ui/StatusBadge';
+import AdminHeader from '../components/admin/layout/AdminHeader';
+import AdminTabs from '../components/admin/layout/AdminTabs';
+import BalanceSubTabs from '../components/admin/layout/BalanceSubTabs';
+import AdminToolbar from '../components/admin/layout/AdminToolbar';
+import AdminSectionTitle from '../components/admin/layout/AdminSectionTitle';
 import { adminService } from '../services/AdminService';
 import { authService } from '../services/AuthService';
 
@@ -2320,147 +2326,66 @@ function AdminPage() {
         onConfirm={submitConfirm}
       />
 
-      
-
       <div className="max-w-6xl mx-auto px-4 py-10 md:py-16">
-        <header className="mb-8 text-center">
-          <nav
-            className="mb-4 text-[11px] md:text-xs text-slate-400"
-            aria-label="Fil d'Ariane"
-          >
-            <ol className="flex items-center justify-center gap-1">
-              <li>
-                <button
-                  type="button"
-                  onClick={() => navigate('/')}
-                  className="hover:text-amber-300 hover:underline underline-offset-2 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70 rounded-sm"
-                >
-                  Accueil
-                </button>
-              </li>
-              <li aria-hidden="true" className="text-slate-600 mx-1">
-                /
-              </li>
-              <li aria-current="page" className="text-amber-200 font-medium">
-                Admin
-              </li>
-            </ol>
-          </nav>
-
-          <p className="text-xs uppercase tracking-[0.25em] text-amber-300 mb-2">
-            Outils d'administration
-          </p>
-          <h1 className="text-3xl md:text-4xl font-heading font-semibold mb-2">
-            Panneau Admin
-          </h1>
-          <p className="text-sm md:text-base text-slate-300 max-w-3xl mx-auto">
-            Balance, endgame, support et outils joueur (debug / assistance).
-          </p>
-        </header>
+        <AdminHeader onHome={() => navigate('/')} />
 
         <div className="rounded-2xl border border-amber-500/30 bg-black/50 shadow-[0_0_40px_rgba(251,191,36,0.18)] px-4 py-5 md:px-6 md:py-6 space-y-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="flex flex-wrap gap-2">
-              {mainTabs.map((t) => (
-                <button
-                  key={t.key}
-                  type="button"
-                  onClick={() => {
-                    if (t.key === 'balance') setActiveTab(balanceTab);
-                    else setActiveTab(t.key);
-                  }}
-                  className={`px-3 py-1 rounded-md border text-xs transition-colors focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70 ${
-                    activeMainTab === t.key
-                      ? 'border-amber-400 text-amber-200 bg-amber-500/10'
-                      : 'border-slate-700 text-slate-200 hover:border-amber-400 hover:text-amber-200'
-                  }`}
-                >
-                  {t.label}{' '}
-                  <span className="text-[11px] text-slate-400">({t.hint})</span>
-                </button>
-              ))}
-            </div>
+            <AdminTabs
+              tabs={mainTabs}
+              activeKey={activeMainTab}
+              onSelect={(key) => {
+                if (key === 'balance') setActiveTab(balanceTab);
+                else setActiveTab(key);
+              }}
+            />
 
             {activeMainTab === 'balance' && (
-              <div className="flex flex-wrap gap-2">
-                {balanceTabs.map((t) => (
-                  <button
-                      key={t.key}
-                      type="button"
-                      onClick={() => setActiveTab(t.key)}
-                      className={`px-3 py-1 rounded-md border text-xs transition-colors focus:outline-none focus-visible:ring focus-visible:ring-emerald-400/70 ${
-                        activeTab === t.key
-                          ? 'border-emerald-400 text-emerald-200 bg-emerald-500/10'
-                          : 'border-slate-700 text-slate-200 hover:border-emerald-400 hover:text-emerald-200'
-                      }`}
-                    >
-                    {t.label}{' '}
-                    <span className="text-[11px] text-slate-400">
-                      ({t.count})
-                    </span>
-                  </button>
-                ))}
-              </div>
+              <BalanceSubTabs
+                tabs={balanceTabs}
+                activeKey={activeTab}
+                onSelect={(key) => setActiveTab(key)}
+              />
             )}
 
-            <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-              {dirtyInfo.rows > 0 ? (
-                <div className="shrink-0 px-3 py-2 rounded-lg border border-amber-500/40 bg-amber-500/10 text-xs text-amber-200">
-                  Modifications non enregistrées ({dirtyInfo.rows})
-                </div>
-              ) : null}
-              <input
-                value={activeTab === 'players' ? playersSearch : search}
-                aria-label={
-                  activeTab === 'players'
-                    ? 'Rechercher un joueur'
-                    : 'Rechercher dans le tableau'
+            <AdminToolbar
+              dirtyCount={dirtyInfo.rows}
+              searchValue={activeTab === 'players' ? playersSearch : search}
+              searchAriaLabel={
+                activeTab === 'players'
+                  ? 'Rechercher un joueur'
+                  : 'Rechercher dans le tableau'
+              }
+              searchPlaceholder={
+                activeTab === 'players'
+                  ? 'Rechercher (id, pseudo, email...)'
+                  : 'Rechercher (id, code, nom...)'
+              }
+              onSearchChange={(value) => {
+                if (activeTab === 'players') {
+                  setPlayersSearch(value);
+                  setPlayersPage(0);
+                } else {
+                  setSearch(value);
                 }
-                onChange={(e) => {
-                  if (activeTab === 'players') {
-                    setPlayersSearch(e.target.value);
-                    setPlayersPage(0);
-                  } else {
-                    setSearch(e.target.value);
-                  }
-                }}
-                placeholder={
-                  activeTab === 'players'
-                    ? 'Rechercher (id, pseudo, email...)'
-                    : 'Rechercher (id, code, nom...)'
+              }}
+              showCreate={isBalanceTab}
+              onCreate={openCreate}
+              createLabel="Créer"
+              onReset={() => {
+                if (activeTab === 'players') {
+                  setPlayersSearch('');
+                  setPlayersPage(0);
+                } else {
+                  setSearch('');
                 }
-                className="flex-1 min-w-0 md:flex-none md:w-72 rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
-              />
-              {isBalanceTab && (
-                <button
-                  type="button"
-                  onClick={openCreate}
-                  className="shrink-0 px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-xs text-slate-900 font-semibold transition-colors"
-                >
-                  Créer
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  if (activeTab === 'players') {
-                    setPlayersSearch('');
-                    setPlayersPage(0);
-                  }
-                  else setSearch('');
-                }}
-                aria-label="Réinitialiser la recherche"
-                className="shrink-0 px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
-              >
-                Reset
-              </button>
-            </div>
+              }}
+              resetAriaLabel="Réinitialiser la recherche"
+            />
           </div>
 
           <div className="border-t border-slate-800/70 pt-4">
-            <h2 className="text-sm font-semibold text-amber-200 mb-3">
-              {title}
-            </h2>
+            <AdminSectionTitle>{title}</AdminSectionTitle>
 
             {createOpen && isBalanceTab && (
               <div className="mb-4 rounded-xl border border-amber-500/30 bg-slate-950/40 p-3 space-y-3">
@@ -3031,7 +2956,7 @@ function AdminPage() {
                         })}
                       </div>
 
-                      <div className="hidden md:block overflow-x-auto">
+                      <TableShell className="hidden md:block" asChild>
                       <table className="w-full text-left text-xs">
                         <thead className="text-[11px] uppercase tracking-widest text-slate-400">
                           <tr className="border-b border-slate-800/70">
@@ -3103,7 +3028,7 @@ function AdminPage() {
                           })}
                         </tbody>
                       </table>
-                    </div>
+                    </TableShell>
                     </>
                   )}
                 </div>
@@ -3878,7 +3803,7 @@ function AdminPage() {
                             })}
                           </div>
 
-                          <div className="hidden md:block overflow-x-auto">
+                          <TableShell className="hidden md:block" asChild>
                           <table className="w-full text-left text-xs">
                             <thead className="text-[11px] uppercase tracking-widest text-slate-400">
                               <tr className="border-b border-slate-800/70">
@@ -3939,7 +3864,7 @@ function AdminPage() {
                               })}
                             </tbody>
                           </table>
-                        </div>
+                        </TableShell>
                         </>
                       )}
                     </div>
@@ -4287,7 +4212,7 @@ function AdminPage() {
                           ))}
                         </div>
 
-                        <div className="hidden md:block overflow-x-auto">
+                        <TableShell className="hidden md:block" asChild>
                         <table className="min-w-[900px] w-full text-left text-xs">
                           <thead className="text-[11px] uppercase tracking-widest text-slate-400">
                             <tr className="border-b border-slate-800/70">
@@ -4329,9 +4254,9 @@ function AdminPage() {
                                 </td>
                               </tr>
                             ))}
-                          </tbody>
+                        </tbody>
                         </table>
-                      </div>
+                      </TableShell>
                       </>
                     )}
                   </div>
@@ -4542,7 +4467,7 @@ function AdminPage() {
                           })}
                       </div>
 
-                      <div className="hidden md:block overflow-x-auto">
+                      <TableShell className="hidden md:block" asChild>
                       <table className="min-w-[900px] w-full text-left text-xs">
                         <thead className="text-[11px] uppercase tracking-widest text-slate-400">
                           <tr className="border-b border-amber-500/20">
@@ -4627,7 +4552,7 @@ function AdminPage() {
                             })}
                         </tbody>
                       </table>
-                    </div>
+                    </TableShell>
                     </>
                   )
                 ) : (
@@ -4704,7 +4629,7 @@ function AdminPage() {
                             ))}
                         </div>
 
-                        <div className="hidden md:block overflow-x-auto">
+                        <TableShell className="hidden md:block" asChild>
                         <table className="min-w-[900px] w-full text-left text-xs">
                           <thead className="text-[11px] uppercase tracking-widest text-slate-400">
                             <tr className="border-b border-slate-800/70">
@@ -4753,7 +4678,7 @@ function AdminPage() {
                               ))}
                           </tbody>
                         </table>
-                      </div>
+                      </TableShell>
                       </>
                     )}
                   </div>
@@ -5445,7 +5370,7 @@ function AdminPage() {
                   })}
                 </div>
 
-                <div className="hidden md:block overflow-x-auto">
+                <TableShell className="hidden md:block" asChild>
                 <table className="min-w-[900px] w-full text-left text-xs">
                   <thead className="text-[11px] uppercase tracking-widest text-slate-400">
                     <tr className="border-b border-amber-500/20">
@@ -6069,7 +5994,7 @@ function AdminPage() {
                     })}
                   </tbody>
                 </table>
-              </div>
+              </TableShell>
               </>
             )}
           </div>

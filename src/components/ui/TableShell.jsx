@@ -1,10 +1,15 @@
 export default function TableShell({
+  asChild = false,
   className = '',
   tableClassName = '',
   headClassName = 'text-[11px] uppercase tracking-widest text-slate-400',
   head,
   children,
 }) {
+  if (asChild) {
+    return <div className={`overflow-x-auto ${className}`.trim()}>{children}</div>;
+  }
+
   return (
     <div className={`overflow-x-auto ${className}`.trim()}>
       <table className={`w-full text-left text-xs ${tableClassName}`.trim()}>
