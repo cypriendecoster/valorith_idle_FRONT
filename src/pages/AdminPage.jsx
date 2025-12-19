@@ -1,4 +1,4 @@
-ï»¿import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import Toast from '../components/Toast';
 import ActionMenu from '../components/ui/ActionMenu';
@@ -16,6 +16,7 @@ import StatusBadge from '../components/ui/StatusBadge';
 import AdminHeader from '../components/admin/layout/AdminHeader';
 import AdminTabs from '../components/admin/layout/AdminTabs';
 import BalanceSubTabs from '../components/admin/layout/BalanceSubTabs';
+import CreateBalanceForm from '../components/admin/balance/CreateBalanceForm';
 import BalanceList from '../components/admin/balance/BalanceList';
 import AdminToolbar from '../components/admin/layout/AdminToolbar';
 import AdminSectionTitle from '../components/admin/layout/AdminSectionTitle';
@@ -424,7 +425,7 @@ function AdminPage() {
           type: 'error',
           message:
             err?.response?.data?.message ||
-            'Erreur lors de la rÃ©cupÃ©ration du mode maintenance.',
+            'Erreur lors de la récupération du mode maintenance.',
         });
       })
       .finally(() => {
@@ -460,7 +461,7 @@ function AdminPage() {
 
       setToast({
         type: 'success',
-        message: enabled ? 'Maintenance activÃ©e.' : 'Maintenance dÃ©sactivÃ©e.',
+        message: enabled ? 'Maintenance activée.' : 'Maintenance désactivée.',
       });
     } catch (err) {
       console.error(err);
@@ -469,7 +470,7 @@ function AdminPage() {
         type: 'error',
         message:
           err?.response?.data?.message ||
-          'Erreur lors de la mise Ã  jour de la maintenance.',
+          'Erreur lors de la mise à jour de la maintenance.',
       });
     } finally {
       setMaintenanceSaving(false);
@@ -549,7 +550,7 @@ function AdminPage() {
               : skillsRes.status === 'rejected'
                 ? { label: 'Skills', err: skillsRes.reason }
                 : realmUnlockCostsRes.status === 'rejected'
-                  ? { label: 'CoÃ»ts royaumes', err: realmUnlockCostsRes.reason }
+                  ? { label: 'Coûts royaumes', err: realmUnlockCostsRes.reason }
                   : playersRes.status === 'rejected'
                     ? { label: 'Joueurs', err: playersRes.reason }
                     : null;
@@ -614,7 +615,7 @@ function AdminPage() {
             type: 'error',
             message:
               err?.response?.data?.message ||
-              'Erreur lors de la rÃ©cupÃ©ration des joueurs.',
+              'Erreur lors de la récupération des joueurs.',
           });
         })
         .finally(() => {
@@ -883,7 +884,7 @@ function AdminPage() {
             type: 'error',
             message:
               reqRes.reason?.response?.data?.message ||
-              'Erreur lors du chargement des rÃ¨gles endgame.',
+              'Erreur lors du chargement des règles endgame.',
           });
         }
 
@@ -983,7 +984,7 @@ function AdminPage() {
     const ok = await copyToClipboard(value);
     setToast(
       ok
-        ? { type: 'success', message: `${label} copiÃ©.` }
+        ? { type: 'success', message: `${label} copié.` }
         : { type: 'error', message: `Impossible de copier ${label}.` }
     );
   };
@@ -1021,7 +1022,7 @@ function AdminPage() {
     } catch (err) {
       console.error(err);
       setConfirmError(
-        err?.response?.data?.message || "Action impossible. RÃ©essaie."
+        err?.response?.data?.message || "Action impossible. Réessaie."
       );
     } finally {
       setConfirmLoading(false);
@@ -1295,7 +1296,7 @@ function AdminPage() {
     const key = `${type}:${id}`;
     const rowEdits = edits[key];
     if (!rowEdits || Object.keys(rowEdits).length === 0 || getRowDiffs(type, row).length === 0) {
-      setToast({ type: 'success', message: 'Aucune modification Ã  sauvegarder.' });
+      setToast({ type: 'success', message: 'Aucune modification à sauvegarder.' });
       return false;
     }
 
@@ -1379,7 +1380,7 @@ function AdminPage() {
       }
 
       clearRowEdits(type, id);
-      setToast({ type: 'success', message: 'Mise Ã  jour enregistrÃ©e.' });
+      setToast({ type: 'success', message: 'Mise à jour enregistrée.' });
       return true;
     } catch (err) {
       console.error(err);
@@ -1387,7 +1388,7 @@ function AdminPage() {
         type: 'error',
         message:
           err?.response?.data?.message ||
-          "Impossible d'enregistrer la mise Ã  jour.",
+          "Impossible d'enregistrer la mise à jour.",
       });
       return false;
     } finally {
@@ -1402,7 +1403,7 @@ function AdminPage() {
     const key = `${type}:${id}`;
     const rowEdits = edits[key];
     if (!rowEdits || Object.keys(rowEdits).length === 0 || getRowDiffs(type, row).length === 0) {
-      setToast({ type: 'success', message: 'Aucune modification Ã  sauvegarder.' });
+      setToast({ type: 'success', message: 'Aucune modification à sauvegarder.' });
       return;
     }
 
@@ -1570,7 +1571,7 @@ function AdminPage() {
           setToast({
             type: 'error',
             message:
-              'Impossible : ressource dÃ©jÃ  crÃ©Ã©e pour ce royaume. Effectuez une modification.',
+              'Impossible : ressource déjà créée pour ce royaume. Effectuez une modification.',
           });
           return;
         }
@@ -1580,14 +1581,14 @@ function AdminPage() {
         setRealmUnlockCosts(refreshed?.data?.items ?? []);
       }
 
-      setToast({ type: 'success', message: 'CrÃ©ation effectuÃ©e.' });
+      setToast({ type: 'success', message: 'Création effectuée.' });
       setCreateOpen(false);
     } catch (err) {
       console.error(err);
       setToast({
         type: 'error',
         message:
-          err?.response?.data?.message || "Impossible de crÃ©er l'Ã©lÃ©ment.",
+          err?.response?.data?.message || "Impossible de créer l'élément.",
       });
     } finally {
       setCreateSaving(false);
@@ -1603,7 +1604,7 @@ function AdminPage() {
 
     openConfirm({
       title: 'Suppression',
-      message: `Attention, supprimer est dÃ©finitif. Cette action est irrÃ©versible.\n\nConfirmer la suppression de #${id}${label} ?`,
+      message: `Attention, supprimer est définitif. Cette action est irréversible.\n\nConfirmer la suppression de #${id}${label} ?`,
       confirmLabel: 'Supprimer',
       danger: true,
       action: () => handleDelete(type, row),
@@ -1637,14 +1638,14 @@ function AdminPage() {
           prev.filter((r) => Number(r.id) !== Number(id))
         );
       }
-      setToast({ type: 'success', message: 'Suppression effectuÃ©e.' });
+      setToast({ type: 'success', message: 'Suppression effectuée.' });
       return true;
     } catch (err) {
       console.error(err);
       setToast({
         type: 'error',
         message:
-          err?.response?.data?.message || "Impossible de supprimer l'Ã©lÃ©ment.",
+          err?.response?.data?.message || "Impossible de supprimer l'élément.",
       });
       return false;
     }
@@ -1675,7 +1676,7 @@ function AdminPage() {
         amount,
       });
       await refreshSelectedPlayer();
-      setToast({ type: 'success', message: 'Ressource ajoutÃ©e.' });
+      setToast({ type: 'success', message: 'Ressource ajoutée.' });
     } catch (err) {
       console.error(err);
       setToast({
@@ -1710,7 +1711,7 @@ function AdminPage() {
         amount,
       });
       await refreshSelectedPlayer();
-      setToast({ type: 'success', message: 'Ressource ajoutÃ©e.' });
+      setToast({ type: 'success', message: 'Ressource ajoutée.' });
     } catch (err) {
       console.error(err);
       setToast({
@@ -1747,7 +1748,7 @@ function AdminPage() {
         amount: -amount,
       });
       await refreshSelectedPlayer();
-      setToast({ type: 'success', message: 'Ressource retirÃ©e.' });
+      setToast({ type: 'success', message: 'Ressource retirée.' });
     } catch (err) {
       console.error(err);
       setToast({
@@ -1769,7 +1770,7 @@ function AdminPage() {
       return;
     }
     if (amount < 0) {
-      setToast({ type: 'error', message: 'Le montant doit Ãªtre â‰¥ 0.' });
+      setToast({ type: 'error', message: 'Le montant doit être = 0.' });
       return;
     }
 
@@ -1780,13 +1781,13 @@ function AdminPage() {
         amount,
       });
       await refreshSelectedPlayer();
-      setToast({ type: 'success', message: 'Ressource mise Ã  jour.' });
+      setToast({ type: 'success', message: 'Ressource mise à jour.' });
     } catch (err) {
       console.error(err);
       setToast({
         type: 'error',
         message:
-          err?.response?.data?.message || 'Impossible de mettre Ã  jour la ressource.',
+          err?.response?.data?.message || 'Impossible de mettre à jour la ressource.',
       });
     } finally {
       setPlayerResourceSaving(false);
@@ -1804,13 +1805,13 @@ function AdminPage() {
     try {
       setPlayerResourceSaving(true);
       await adminService.unlockPlayerRealm(selectedPlayerId, { realmCode });
-      setToast({ type: 'success', message: 'Royaume dÃ©bloquÃ©.' });
+      setToast({ type: 'success', message: 'Royaume débloqué.' });
     } catch (err) {
       console.error(err);
       setToast({
         type: 'error',
         message:
-          err?.response?.data?.message || "Impossible de dÃ©bloquer le royaume.",
+          err?.response?.data?.message || "Impossible de débloquer le royaume.",
       });
     } finally {
       setPlayerResourceSaving(false);
@@ -1828,7 +1829,7 @@ function AdminPage() {
     try {
       setPlayerResourceSaving(true);
       await adminService.activatePlayerRealm(selectedPlayerId, { realmId });
-      setToast({ type: 'success', message: 'Royaume activÃ©.' });
+      setToast({ type: 'success', message: 'Royaume activé.' });
     } catch (err) {
       console.error(err);
       setToast({
@@ -1856,7 +1857,7 @@ function AdminPage() {
         factoryId,
         level,
       });
-      setToast({ type: 'success', message: 'Niveau usine mis Ã  jour.' });
+      setToast({ type: 'success', message: 'Niveau usine mis à jour.' });
     } catch (err) {
       console.error(err);
       setToast({
@@ -1881,7 +1882,7 @@ function AdminPage() {
     try {
       setPlayerResourceSaving(true);
       await adminService.setPlayerSkillLevel(selectedPlayerId, { skillId, level });
-      setToast({ type: 'success', message: 'Niveau skill mis Ã  jour.' });
+      setToast({ type: 'success', message: 'Niveau skill mis à jour.' });
     } catch (err) {
       console.error(err);
       setToast({
@@ -1897,16 +1898,16 @@ function AdminPage() {
     if (!selectedPlayerId || !selectedPlayer) return;
 
     openConfirm({
-      title: 'RÃ©initialisation',
-      message: `Attention, rÃ©initialiser est dÃ©finitif.\n\nRÃ©initialiser la progression de ${selectedPlayer.username} (#${selectedPlayer.id}) ?`,
-      confirmLabel: 'RÃ©initialiser',
+      title: 'Réinitialisation',
+      message: `Attention, réinitialiser est définitif.\n\nRéinitialiser la progression de ${selectedPlayer.username} (#${selectedPlayer.id}) ?`,
+      confirmLabel: 'Réinitialiser',
       danger: true,
       action: async () => {
         try {
           setPlayerDangerLoading(true);
           await adminService.resetPlayer(selectedPlayerId);
           await refreshSelectedPlayer();
-          setToast({ type: 'success', message: 'Progression rÃ©initialisÃ©e.' });
+          setToast({ type: 'success', message: 'Progression réinitialisée.' });
         } catch (err) {
           console.error(err);
           setToast({
@@ -1927,7 +1928,7 @@ function AdminPage() {
 
     openConfirm({
       title: 'Suppression de compte',
-      message: `Attention, supprimer est dÃ©finitif.\n\nTape SUPPRIMER pour confirmer la suppression du compte ${selectedPlayer.username} (#${selectedPlayer.id}).`,
+      message: `Attention, supprimer est définitif.\n\nTape SUPPRIMER pour confirmer la suppression du compte ${selectedPlayer.username} (#${selectedPlayer.id}).`,
       confirmLabel: 'Supprimer',
       danger: true,
       expectedText: 'SUPPRIMER',
@@ -1943,7 +1944,7 @@ function AdminPage() {
           setSelectedPlayerResources([]);
           setSelectedPlayerFactories([]);
           setSelectedPlayerSkills([]);
-          setToast({ type: 'success', message: 'Compte supprimÃ©.' });
+          setToast({ type: 'success', message: 'Compte supprimé.' });
         } catch (err) {
           console.error(err);
           setToast({
@@ -1965,7 +1966,7 @@ function AdminPage() {
     return;
     if (
       false && (
-        `RÃ©initialiser la progression de ${selectedPlayer.username} (#${selectedPlayer.id}) ?`
+        `Réinitialiser la progression de ${selectedPlayer.username} (#${selectedPlayer.id}) ?`
       )
     ) {
       return;
@@ -1975,7 +1976,7 @@ function AdminPage() {
       setPlayerDangerLoading(true);
       await adminService.resetPlayer(selectedPlayerId);
       await refreshSelectedPlayer();
-      setToast({ type: 'success', message: 'Progression rÃ©initialisÃ©e.' });
+      setToast({ type: 'success', message: 'Progression réinitialisée.' });
     } catch (err) {
       console.error(err);
       setToast({
@@ -2001,7 +2002,7 @@ function AdminPage() {
       setSelectedPlayerId(null);
       setSelectedPlayer(null);
       setSelectedPlayerResources([]);
-      setToast({ type: 'success', message: 'Compte supprimÃ©.' });
+      setToast({ type: 'success', message: 'Compte supprimé.' });
     } catch (err) {
       console.error(err);
       setToast({
@@ -2044,7 +2045,7 @@ function AdminPage() {
     if (!ticketId) return;
     try {
       await adminService.updateSupportTicketStatus(ticketId, status);
-      setToast({ type: 'success', message: 'Ticket mis Ã  jour.' });
+      setToast({ type: 'success', message: 'Ticket mis à jour.' });
       await refreshSupportTickets();
     } catch (err) {
       console.error(err);
@@ -2099,7 +2100,7 @@ function AdminPage() {
         type: 'error',
         message:
           err?.response?.data?.message ||
-          "Erreur lors du rafraÃ®chissement de l'endgame.",
+          "Erreur lors du rafraîchissement de l'endgame.",
       });
     } finally {
       setEndgameLoading(false);
@@ -2130,7 +2131,7 @@ function AdminPage() {
       if (exists) {
         setToast({
           type: 'error',
-          message: 'Cette ressource est dÃ©jÃ  prÃ©sente dans les rÃ¨gles endgame.',
+          message: 'Cette ressource est déjà présente dans les règles endgame.',
         });
         return;
       }
@@ -2138,7 +2139,7 @@ function AdminPage() {
       await adminService.createEndgameRequirement(payload);
       const reqRes = await adminService.getEndgameRequirements();
       setEndgameRequirements(reqRes?.data ?? []);
-      setToast({ type: 'success', message: 'RÃ¨gle crÃ©Ã©e.' });
+      setToast({ type: 'success', message: 'Règle créée.' });
       setCreateOpen(false);
       setCreateDraft({});
     } catch (err) {
@@ -2147,7 +2148,7 @@ function AdminPage() {
         type: 'error',
         message:
           err?.response?.data?.message ||
-          "Impossible de crÃ©er la rÃ¨gle endgame.",
+          "Impossible de créer la règle endgame.",
       });
     } finally {
       setCreateSaving(false);
@@ -2179,14 +2180,14 @@ function AdminPage() {
       label: 'Balance',
       hint: `${realms.length + realmUnlockCosts.length + resources.length + factories.length + skills.length} items`,
     },
-    { key: 'endgame', label: 'Endgame', hint: 'RÃ¨gles + classement' },
+    { key: 'endgame', label: 'Endgame', hint: 'Règles + classement' },
     { key: 'players', label: 'Joueurs', hint: `${playersTotal || players.length} joueurs` },
     { key: 'support', label: 'Support & Logs', hint: 'Ops + audit' },
   ];
 
   const balanceTabs = [
     { key: 'realms', label: 'Royaumes', count: realms.length },
-    { key: 'realm_unlock_costs', label: 'CoÃ»ts royaumes', count: realmUnlockCosts.length },
+    { key: 'realm_unlock_costs', label: 'Coûts royaumes', count: realmUnlockCosts.length },
     { key: 'resources', label: 'Ressources', count: resources.length },
     { key: 'factories', label: 'Usines', count: factories.length },
     { key: 'skills', label: 'Skills', count: skills.length },
@@ -2194,24 +2195,24 @@ function AdminPage() {
 
   const title =
     activeTab === 'realms'
-      ? 'Balance Â· Royaumes'
+      ? 'Balance · Royaumes'
       : activeTab === 'realm_unlock_costs'
-        ? 'Balance Â· CoÃ»ts royaumes'
+        ? 'Balance · Coûts royaumes'
         : activeTab === 'resources'
-          ? 'Balance Â· Ressources'
+          ? 'Balance · Ressources'
           : activeTab === 'factories'
-            ? 'Balance Â· Usines'
+            ? 'Balance · Usines'
             : activeTab === 'skills'
-              ? 'Balance Â· Skills'
+              ? 'Balance · Skills'
               : activeTab === 'players'
                 ? 'Joueurs'
                 : activeTab === 'support'
                   ? supportTab === 'tickets'
-                    ? 'Support Â· Tickets'
-                    : 'Audit Â· Logs admin'
+                    ? 'Support · Tickets'
+                    : 'Audit · Logs admin'
                   : endgameTab === 'requirements'
-                    ? 'Endgame Â· RÃ¨gles'
-                    : 'Endgame Â· Classement';
+                    ? 'Endgame · Règles'
+                    : 'Endgame · Classement';
 
   const inputClass =
     'w-full rounded-md bg-slate-950/60 border border-slate-700 px-2 py-1 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70';
@@ -2372,7 +2373,7 @@ function AdminPage() {
               }}
               showCreate={isBalanceTab}
               onCreate={openCreate}
-              createLabel="CrÃ©er"
+              createLabel="Créer"
               onReset={() => {
                 if (activeTab === 'players') {
                   setPlayersSearch('');
@@ -2381,420 +2382,28 @@ function AdminPage() {
                   setSearch('');
                 }
               }}
-              resetAriaLabel="RÃ©initialiser la recherche"
+              resetAriaLabel="Réinitialiser la recherche"
             />
           </div>
 
           <div className="border-t border-slate-800/70 pt-4">
             <AdminSectionTitle>{title}</AdminSectionTitle>
 
-            {createOpen && isBalanceTab && (
-              <div className="mb-4 rounded-xl border border-amber-500/30 bg-slate-950/40 p-3 space-y-3">
-                <p className="text-xs text-slate-300">
-                  CrÃ©ation dâ€™un nouvel Ã©lÃ©ment ({title})
-                </p>
-
-                {activeTab === 'realms' && (
-                  <div className="grid gap-2 md:grid-cols-6">
-                    <input
-                      className={inputClass}
-                      placeholder="Code"
-                      value={createDraft.code ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({ ...p, code: e.target.value }))
-                      }
-                    />
-                    <input
-                      className={inputClass}
-                      placeholder="Nom"
-                      value={createDraft.name ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({ ...p, name: e.target.value }))
-                      }
-                    />
-                    <input
-                      className={`${inputClass} md:col-span-2`}
-                      placeholder="Description"
-                      value={createDraft.description ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({
-                          ...p,
-                          description: e.target.value,
-                        }))
-                      }
-                    />
-                    <label className="inline-flex items-center gap-2 text-xs text-slate-200">
-                      <input
-                        type="checkbox"
-                        checked={!!createDraft.is_default_unlocked}
-                        onChange={(e) =>
-                          setCreateDraft((p) => ({
-                            ...p,
-                            is_default_unlocked: e.target.checked,
-                          }))
-                        }
-                        className="accent-amber-400"
-                      />
-                      Default
-                    </label>
-                  </div>
-                )}
-
-                {activeTab === 'realm_unlock_costs' && (
-                  <div className="grid gap-2 md:grid-cols-3">
-                    <select
-                      className={inputClass}
-                      value={createDraft.target_realm_id ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({
-                          ...p,
-                          target_realm_id: e.target.value,
-                        }))
-                      }
-                    >
-                      <option value="">Royaume</option>
-                      {realms.map((realm) => (
-                        <option key={`create-realm-${realm.id}`} value={realm.id}>
-                          {realm.code} (#{realm.id})
-                        </option>
-                      ))}
-                    </select>
-
-                    <select
-                      className={inputClass}
-                      value={createDraft.resource_id ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({
-                          ...p,
-                          resource_id: e.target.value,
-                        }))
-                      }
-                    >
-                      <option value="">Ressource</option>
-                      {resources.map((res) => (
-                        <option key={`create-res-${res.id}`} value={res.id}>
-                          {res.code} (#{res.id})
-                        </option>
-                      ))}
-                    </select>
-
-                    <input
-                      className={inputClass}
-                      placeholder="Montant"
-                      inputMode="decimal"
-                      value={createDraft.amount ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({
-                          ...p,
-                          amount: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                )}
-
-                {activeTab === 'resources' && (
-                  <div className="grid gap-2 md:grid-cols-6">
-                    <input
-                      className={inputClass}
-                      placeholder="Realm ID (optionnel)"
-                      inputMode="numeric"
-                      value={createDraft.realm_id ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({ ...p, realm_id: e.target.value }))
-                      }
-                    />
-                    <input
-                      className={inputClass}
-                      placeholder="Code"
-                      value={createDraft.code ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({ ...p, code: e.target.value }))
-                      }
-                    />
-                    <input
-                      className={inputClass}
-                      placeholder="Nom"
-                      value={createDraft.name ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({ ...p, name: e.target.value }))
-                      }
-                    />
-                    <input
-                      className={`${inputClass} md:col-span-3`}
-                      placeholder="Description"
-                      value={createDraft.description ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({
-                          ...p,
-                          description: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                )}
-
-                {activeTab === 'factories' && (
-                  <div className="grid gap-2 md:grid-cols-10">
-                    <select
-                      className={inputClass}
-                      value={createDraft.realm_id ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({ ...p, realm_id: e.target.value }))
-                      }
-                    >
-                      <option value="">Royaume</option>
-                      {sortedRealms.map((realm) => (
-                        <option key={`create-factory-realm-${realm.id}`} value={realm.id}>
-                          {realm.code} - {realm.name} (#{realm.id})
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      className={inputClass}
-                      value={createDraft.resource_id ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({ ...p, resource_id: e.target.value }))
-                      }
-                    >
-                      <option value="">Ressource</option>
-                      {sortedResources.map((res) => (
-                        <option key={`create-factory-res-${res.id}`} value={res.id}>
-                          {res.code} - {res.name} (#{res.id})
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      className={inputClass}
-                      placeholder="Code"
-                      value={createDraft.code ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({ ...p, code: e.target.value }))
-                      }
-                    />
-                    <input
-                      className={inputClass}
-                      placeholder="Nom"
-                      value={createDraft.name ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({ ...p, name: e.target.value }))
-                      }
-                    />
-                    <input
-                      className={`${inputClass} md:col-span-2`}
-                      placeholder="Description"
-                      value={createDraft.description ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({
-                          ...p,
-                          description: e.target.value,
-                        }))
-                      }
-                    />
-                    <input
-                      className={inputClass}
-                      placeholder="Base prod"
-                      inputMode="decimal"
-                      value={createDraft.base_production ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({
-                          ...p,
-                          base_production: e.target.value,
-                        }))
-                      }
-                    />
-                    <input
-                      className={inputClass}
-                      placeholder="Base cost"
-                      inputMode="decimal"
-                      value={createDraft.base_cost ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({
-                          ...p,
-                          base_cost: e.target.value,
-                        }))
-                      }
-                    />
-                    <input
-                      className={inputClass}
-                      placeholder="Order"
-                      inputMode="numeric"
-                      value={createDraft.unlock_order ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({
-                          ...p,
-                          unlock_order: e.target.value,
-                        }))
-                      }
-                    />
-                    <label className="inline-flex items-center gap-2 text-xs text-slate-200">
-                      <input
-                        type="checkbox"
-                        checked={!!createDraft.is_active}
-                        onChange={(e) =>
-                          setCreateDraft((p) => ({
-                            ...p,
-                            is_active: e.target.checked,
-                          }))
-                        }
-                        className="accent-amber-400"
-                      />
-                      Active
-                    </label>
-                  </div>
-                )}
-
-                {activeTab === 'skills' && (
-                  <div className="grid gap-2 md:grid-cols-12">
-                    <select
-                      className={inputClass}
-                      value={createDraft.realm_id ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({ ...p, realm_id: e.target.value }))
-                      }
-                    >
-                      <option value="">Royaume</option>
-                      {sortedRealms.map((realm) => (
-                        <option key={`create-skill-realm-${realm.id}`} value={realm.id}>
-                          {realm.code} - {realm.name} (#{realm.id})
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      className={inputClass}
-                      placeholder="Code"
-                      value={createDraft.code ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({ ...p, code: e.target.value }))
-                      }
-                    />
-                    <input
-                      className={inputClass}
-                      placeholder="Nom"
-                      value={createDraft.name ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({ ...p, name: e.target.value }))
-                      }
-                    />
-                    <input
-                      className={`${inputClass} md:col-span-2`}
-                      placeholder="Description"
-                      value={createDraft.description ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({
-                          ...p,
-                          description: e.target.value,
-                        }))
-                      }
-                    />
-                    <input
-                      className={inputClass}
-                      placeholder="Type"
-                      value={createDraft.effect_type ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({
-                          ...p,
-                          effect_type: e.target.value,
-                        }))
-                      }
-                    />
-                    <input
-                      className={inputClass}
-                      placeholder="Value"
-                      inputMode="decimal"
-                      value={createDraft.effect_value ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({
-                          ...p,
-                          effect_value: e.target.value,
-                        }))
-                      }
-                    />
-                    <input
-                      className={inputClass}
-                      placeholder="Max"
-                      inputMode="numeric"
-                      value={createDraft.max_level ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({ ...p, max_level: e.target.value }))
-                      }
-                    />
-                    <select
-                      className={inputClass}
-                      value={createDraft.base_cost_resource_id ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({
-                          ...p,
-                          base_cost_resource_id: e.target.value,
-                        }))
-                      }
-                    >
-                      <option value="">Ressource de coÃ»t</option>
-                      {sortedResources.map((res) => (
-                        <option key={`create-skill-costres-${res.id}`} value={res.id}>
-                          {res.code} - {res.name} (#{res.id})
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      className={inputClass}
-                      placeholder="Base cost"
-                      inputMode="decimal"
-                      value={createDraft.base_cost_amount ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({
-                          ...p,
-                          base_cost_amount: e.target.value,
-                        }))
-                      }
-                    />
-                    <input
-                      className={inputClass}
-                      placeholder="Growth"
-                      inputMode="decimal"
-                      value={createDraft.cost_growth_factor ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({
-                          ...p,
-                          cost_growth_factor: e.target.value,
-                        }))
-                      }
-                    />
-                    <input
-                      className={inputClass}
-                      placeholder="Order"
-                      inputMode="numeric"
-                      value={createDraft.unlock_order ?? ''}
-                      onChange={(e) =>
-                        setCreateDraft((p) => ({
-                          ...p,
-                          unlock_order: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                )}
-
-                <div className="flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setCreateOpen(false)}
-                    className="px-3 py-1 rounded-md border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    type="button"
-                    disabled={createSaving}
-                    onClick={handleCreate}
-                    className="px-3 py-1 rounded-md bg-amber-500 hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed text-xs text-slate-900 font-semibold transition-colors"
-                  >
-                    {createSaving ? 'CrÃ©ationâ€¦' : 'CrÃ©er'}
-                  </button>
-                </div>
-              </div>
-            )}
-
+            <CreateBalanceForm
+              open={createOpen && isBalanceTab}
+              title={title}
+              activeTab={activeTab}
+              createDraft={createDraft}
+              setCreateDraft={setCreateDraft}
+              inputClass={inputClass}
+              realms={realms}
+              resources={resources}
+              sortedRealms={sortedRealms}
+              sortedResources={sortedResources}
+              createSaving={createSaving}
+              onCreate={handleCreate}
+              onCancel={() => setCreateOpen(false)}
+            />
             {activeTab === 'players' ? (
               <div className="grid gap-4 lg:grid-cols-2">
                 <div
@@ -2830,11 +2439,11 @@ function AdminPage() {
                           className="rounded-lg bg-slate-950/60 border border-slate-700 px-2 py-1 text-[11px] text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
                         >
                           <option value="id">ID</option>
-                          <option value="last_login_at">DerniÃ¨re connexion</option>
-                          <option value="created_at">CrÃ©ation</option>
+                          <option value="last_login_at">Dernière connexion</option>
+                          <option value="created_at">Création</option>
                           <option value="username">Pseudo</option>
                           <option value="email">Email</option>
-                          <option value="role">RÃ´le</option>
+                          <option value="role">Rôle</option>
                         </select>
 
                         <button
@@ -2872,7 +2481,7 @@ function AdminPage() {
                           onNext={() =>
                             setPlayersPage((p) => Math.min(playersMaxPage, p + 1))
                           }
-                          ariaPrev="Page prÃ©cÃ©dente joueurs"
+                          ariaPrev="Page précédente joueurs"
                           ariaNext="Page suivante joueurs"
                         />
 
@@ -2935,13 +2544,13 @@ function AdminPage() {
                               <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
                                 <div>
                                   <p className="uppercase tracking-widest text-slate-500">
-                                    RÃ´le
+                                    Rôle
                                   </p>
                                   <Badge className="mt-0.5">{p.role || '-'}</Badge>
                                 </div>
                                 <div>
                                   <p className="uppercase tracking-widest text-slate-500">
-                                    DerniÃ¨re connexion
+                                    Dernière connexion
                                   </p>
                                   <p className="text-slate-300">
                                     {p.last_login_at
@@ -2962,8 +2571,8 @@ function AdminPage() {
                               <th className="py-2 pr-3">ID</th>
                               <th className="py-2 pr-3">Pseudo</th>
                               <th className="py-2 pr-3">Email</th>
-                              <th className="py-2 pr-3">RÃ´le</th>
-                              <th className="py-2">DerniÃ¨re connexion</th>
+                              <th className="py-2 pr-3">Rôle</th>
+                              <th className="py-2">Dernière connexion</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -3059,7 +2668,7 @@ function AdminPage() {
                           </p>
                         ) : (
                           <p className="text-sm text-slate-400 mt-1">
-                            SÃ©lectionne un joueur Ã  gauche.
+                            Sélectionne un joueur à gauche.
                           </p>
                         )}
                         {selectedPlayer ? (
@@ -3096,7 +2705,7 @@ function AdminPage() {
                           onClick={() => refreshSelectedPlayer()}
                           className="px-3 py-1 rounded-md border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
                         >
-                          RafraÃ®chir
+                          Rafraîchir
                         </button>
                       )}
                     </div>
@@ -3114,10 +2723,10 @@ function AdminPage() {
                             value={playerRealmCode}
                             onChange={(e) => setPlayerRealmCode(e.target.value)}
                           >
-                            <option value="">DÃ©bloquer un royaume</option>
+                            <option value="">Débloquer un royaume</option>
                             {realms.map((r) => (
                               <option key={r.id} value={r.code}>
-                                {r.code} â€” {r.name}
+                                {r.code} — {r.name}
                               </option>
                             ))}
                           </select>
@@ -3127,7 +2736,7 @@ function AdminPage() {
                             onClick={handlePlayerUnlockRealm}
                             className="px-3 py-1 rounded-md bg-amber-500 hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed text-xs text-slate-900 font-semibold transition-colors"
                           >
-                            DÃ©bloquer
+                            Débloquer
                           </button>
                         </div>
 
@@ -3140,7 +2749,7 @@ function AdminPage() {
                             <option value="">Activer un royaume (id)</option>
                             {realms.map((r) => (
                               <option key={r.id} value={r.id}>
-                                #{r.id} â€” {r.name}
+                                #{r.id} — {r.name}
                               </option>
                             ))}
                           </select>
@@ -3157,7 +2766,7 @@ function AdminPage() {
 
                       <div className="grid gap-3 rounded-lg border border-slate-800 bg-slate-950/30 p-3">
                         <p className="text-xs text-slate-300 font-semibold">
-                          Niveaux usines / compÃ©tences
+                          Niveaux usines / compétences
                         </p>
                         <div className="grid gap-2 md:grid-cols-4">
                           <select
@@ -3179,7 +2788,7 @@ function AdminPage() {
                             <option value="">Choisir une usine</option>
                             {factories.map((f) => (
                               <option key={f.id} value={f.id}>
-                                #{f.id} â€” {f.code} â€” {f.name} (actuel:{' '}
+                                #{f.id} — {f.code} — {f.name} (actuel:{' '}
                                 {playerFactoryLevelById.get(Number(f.id)) ?? 0})
                               </option>
                             ))}
@@ -3222,10 +2831,10 @@ function AdminPage() {
                               }
                             }}
                           >
-                            <option value="">Choisir une compÃ©tence</option>
+                            <option value="">Choisir une compétence</option>
                             {skills.map((s) => (
                               <option key={s.id} value={s.id}>
-                                #{s.id} â€” {s.code} â€” {s.name} (actuel:{' '}
+                                #{s.id} — {s.code} — {s.name} (actuel:{' '}
                                 {playerSkillLevelById.get(Number(s.id)) ?? 0})
                               </option>
                             ))}
@@ -3261,7 +2870,7 @@ function AdminPage() {
                           <option value="">Choisir une ressource</option>
                           {resources.map((r) => (
                             <option key={r.id} value={r.id}>
-                              {r.code} â€” {r.name}
+                              {r.code} — {r.name}
                             </option>
                           ))}
                         </select>
@@ -3299,7 +2908,7 @@ function AdminPage() {
                           onClick={handlePlayerSet}
                           className="px-3 py-1 rounded-md border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                          DÃ©finir
+                          Définir
                         </button>
                         <button
                           type="button"
@@ -3401,13 +3010,13 @@ function AdminPage() {
                   <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                     <div className="space-y-1">
                       <p className="text-xs uppercase tracking-[0.25em] text-amber-300">
-                        SystÃ¨me
+                        Système
                       </p>
                       <h2 className="text-lg font-heading text-slate-100">
                         Maintenance
                       </h2>
                       <p className="text-xs text-slate-400 max-w-xl">
-                        Active/dÃ©sactive lâ€™accÃ¨s Ã  lâ€™API pour les joueurs. Les admins restent autorisÃ©s.
+                        Active/désactive l’accès à l’API pour les joueurs. Les admins restent autorisés.
                       </p>
                     </div>
 
@@ -3426,7 +3035,7 @@ function AdminPage() {
                         onClick={() => saveMaintenance(false)}
                         className="px-3 py-2 rounded-md border border-slate-700 text-slate-200 hover:bg-white/5 transition-colors disabled:opacity-60 disabled:cursor-not-allowed text-xs"
                       >
-                        DÃ©sactiver
+                        Désactiver
                       </button>
                     </div>
                   </div>
@@ -3439,14 +3048,14 @@ function AdminPage() {
                       <input
                         value={maintenanceMessage}
                         onChange={(e) => setMaintenanceMessage(e.target.value)}
-                        placeholder="Serveur en maintenance. Merci de rÃ©essayer plus tard."
+                        placeholder="Serveur en maintenance. Merci de réessayer plus tard."
                         className="w-full rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
                         disabled={maintenanceLoading || maintenanceSaving}
                       />
                     </div>
                     <div>
                       <label className="block text-[11px] uppercase tracking-widest text-slate-400 mb-1">
-                        RÃ©essayer dans (s)
+                        Réessayer dans (s)
                       </label>
                       <input
                         value={maintenanceRetryAfter}
@@ -3461,7 +3070,7 @@ function AdminPage() {
 
                   <div className="mt-3 flex items-center justify-between gap-3">
                     <p className="text-xs text-slate-400">
-                      Ã‰tat :{' '}
+                      État :{' '}
                       <span
                         className={
                           maintenanceEnabled
@@ -3469,7 +3078,7 @@ function AdminPage() {
                             : 'text-emerald-200'
                         }
                       >
-                        {maintenanceEnabled ? 'activÃ©e' : 'dÃ©sactivÃ©e'}
+                        {maintenanceEnabled ? 'activée' : 'désactivée'}
                       </span>
                     </p>
                     <button
@@ -3550,12 +3159,12 @@ function AdminPage() {
                         <input
                           list="support-category-list"
                           value={supportCategory}
-                          aria-label="Filtrer les tickets par catÃ©gorie"
+                          aria-label="Filtrer les tickets par catégorie"
                           onChange={(e) => {
                             setSupportCategory(e.target.value);
                             setSupportPage(0);
                           }}
-                          placeholder="CatÃ©gorie"
+                          placeholder="Catégorie"
                           className="w-40 rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
                         />
                         <datalist id="support-category-list">
@@ -3583,7 +3192,7 @@ function AdminPage() {
                         }}
                         className="rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
                       >
-                        <option value="DESC">RÃ©cents</option>
+                        <option value="DESC">Récents</option>
                         <option value="ASC">Anciens</option>
                       </select>
                       <select
@@ -3603,11 +3212,11 @@ function AdminPage() {
                       <button
                         type="button"
                         onClick={refreshSupportTickets}
-                        aria-label="RafraÃ®chir les tickets"
+                        aria-label="Rafraîchir les tickets"
                         disabled={supportTicketsLoading}
                         className="px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
                       >
-                        {supportTicketsLoading ? '...' : 'RafraÃ®chir'}
+                        {supportTicketsLoading ? '...' : 'Rafraîchir'}
                       </button>
                       <PaginationControls
                         disabled={supportTicketsLoading || supportTicketsTotal <= 0}
@@ -3621,7 +3230,7 @@ function AdminPage() {
                         onNext={() =>
                           setSupportPage((p) => Math.min(supportMaxPage, p + 1))
                         }
-                        ariaPrev="Page prÃ©cÃ©dente tickets"
+                        ariaPrev="Page précédente tickets"
                         ariaNext="Page suivante tickets"
                       />
                     </div>
@@ -3676,7 +3285,7 @@ function AdminPage() {
                         }}
                         className="rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
                       >
-                        <option value="DESC">RÃ©cents</option>
+                        <option value="DESC">Récents</option>
                         <option value="ASC">Anciens</option>
                       </select>
                       <select
@@ -3700,7 +3309,7 @@ function AdminPage() {
                         disabled={logsLoading}
                         className="px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
                       >
-                        {logsLoading ? '...' : 'RafraÃ®chir'}
+                        {logsLoading ? '...' : 'Rafraîchir'}
                       </button>
                       <PaginationControls
                         disabled={logsLoading || logsTotal <= 0}
@@ -3714,7 +3323,7 @@ function AdminPage() {
                         onNext={() =>
                           setLogsPage((p) => Math.min(logsMaxPage, p + 1))
                         }
-                        ariaPrev="Page prÃ©cÃ©dente logs"
+                        ariaPrev="Page précédente logs"
                         ariaNext="Page suivante logs"
                       />
 
@@ -3864,7 +3473,7 @@ function AdminPage() {
                           {'<'} Retour
                         </button>
                       ) : null}
-                      <p className="text-xs text-slate-300">DÃ©tail du ticket</p>
+                      <p className="text-xs text-slate-300">Détail du ticket</p>
                       {selectedTicket ? (
                         <>
                           <div className="text-sm text-slate-100">
@@ -3877,7 +3486,7 @@ function AdminPage() {
 
 
                             <p className="text-xs text-slate-400 mt-1">
-                              {selectedTicket.username || '-'} Â·{' '}
+                              {selectedTicket.username || '-'} ·{' '}
                               {selectedTicket.email || '-'}
                             </p>
                             <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -3955,7 +3564,7 @@ function AdminPage() {
                             <dl className="grid gap-2 sm:grid-cols-2 text-[11px] text-slate-300">
                               <div>
                                 <dt className="uppercase tracking-widest text-slate-500">
-                                  CatÃ©gorie
+                                  Catégorie
                                 </dt>
                                 <dd className="mt-0.5 text-slate-200">
                                   {selectedTicket.category || '-'}
@@ -4064,7 +3673,7 @@ function AdminPage() {
                                           ok
                                             ? {
                                               type: 'success',
-                                              message: 'User-Agent copiÃ©.',
+                                              message: 'User-Agent copié.',
                                             }
                                             : {
                                               type: 'error',
@@ -4117,7 +3726,7 @@ function AdminPage() {
                               }
                               className="px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
                             >
-                              RÃ©ouvrir
+                              Réouvrir
                             </button>
                             <button
                               type="button"
@@ -4132,7 +3741,7 @@ function AdminPage() {
                         </>
                       ) : (
                         <p className="text-sm text-slate-300">
-                          SÃ©lectionne un ticket.
+                          Sélectionne un ticket.
                         </p>
                       )}
                     </div>
@@ -4255,7 +3864,7 @@ function AdminPage() {
                         : 'border-slate-700 text-slate-200 hover:border-amber-400 hover:text-amber-200'
                         }`}
                     >
-                      RÃ¨gles{' '}
+                      Règles{' '}
                       <span className="text-[11px] text-slate-400">
                         ({endgameRequirements.length})
                       </span>
@@ -4282,7 +3891,7 @@ function AdminPage() {
                         onClick={openEndgameCreate}
                         className="px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-xs text-slate-900 font-semibold transition-colors"
                       >
-                        CrÃ©er une rÃ¨gle
+                        Créer une règle
                       </button>
                     )}
                     <button
@@ -4291,7 +3900,7 @@ function AdminPage() {
                       disabled={endgameLoading}
                       className="px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
                     >
-                      {endgameLoading ? '...' : 'RafraÃ®chir'}
+                      {endgameLoading ? '...' : 'Rafraîchir'}
                     </button>
                   </div>
                 </div>
@@ -4299,7 +3908,7 @@ function AdminPage() {
                 {endgameTab === 'requirements' && createOpen && (
                   <div className="rounded-xl border border-amber-500/30 bg-slate-950/40 p-3 space-y-3">
                     <p className="text-xs text-slate-300">
-                      CrÃ©ation d'une rÃ¨gle endgame
+                      Création d'une règle endgame
                     </p>
                     <div className="grid gap-2 md:grid-cols-6">
                       <select
@@ -4342,7 +3951,7 @@ function AdminPage() {
                           onClick={handleCreateEndgameRequirement}
                           className="px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed text-xs text-slate-900 font-semibold transition-colors"
                         >
-                          {createSaving ? 'CrÃ©ationâ€¦' : 'CrÃ©er'}
+                          {createSaving ? 'Création…' : 'Créer'}
                         </button>
                       </div>
                     </div>
@@ -4360,7 +3969,7 @@ function AdminPage() {
                   </div>
                 ) : endgameTab === 'requirements' ? (
                   (endgameRequirements || []).filter(matchesSearch).length === 0 ? (
-                    <p className="text-sm text-slate-300">Aucun rÃ©sultat.</p>
+                    <p className="text-sm text-slate-300">Aucun résultat.</p>
                   ) : (
                     <>
                       <div className="md:hidden space-y-2">
@@ -4427,7 +4036,7 @@ function AdminPage() {
                                     onClick={() => requestSave(type, row)}
                                     className="px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed text-slate-900 font-semibold transition-colors text-xs"
                                   >
-                                    {busy ? 'Sauvegardeâ€¦' : 'Sauvegarder'}
+                                    {busy ? 'Sauvegarde…' : 'Sauvegarder'}
                                   </button>
                                   <ActionMenu
                                     ariaLabel="Actions"
@@ -4515,7 +4124,7 @@ function AdminPage() {
                                           onClick={() => requestSave(type, row)}
                                           className="px-3 py-1 rounded-md bg-amber-500 hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed text-slate-900 font-semibold transition-colors"
                                         >
-                                          {busy ? 'Sauvegardeâ€¦' : 'Sauvegarder'}
+                                          {busy ? 'Sauvegarde…' : 'Sauvegarder'}
                                         </button>
                                         <button
                                           type="button"
@@ -4537,7 +4146,7 @@ function AdminPage() {
                 ) : (
                   <div className="rounded-xl border border-slate-800/70 bg-slate-950/40 p-3">
                     {(endgameRankings || []).filter(matchesSearch).length === 0 ? (
-                      <p className="text-sm text-slate-300">Aucun rÃ©sultat.</p>
+                      <p className="text-sm text-slate-300">Aucun résultat.</p>
                     ) : (
                       <>
                         <div className="md:hidden space-y-2">
@@ -4573,7 +4182,7 @@ function AdminPage() {
                                   <div className="grid gap-2 sm:grid-cols-2">
                                     <div>
                                       <p className="uppercase tracking-widest text-slate-500">
-                                        ComplÃ©tÃ© le
+                                        Complété le
                                       </p>
                                       <p className="text-slate-200 font-mono">
                                         {row?.completed_at
@@ -4597,7 +4206,7 @@ function AdminPage() {
 
                                   <A11yDetailsWrap summaryClassName="list-none [&::-webkit-details-marker]:hidden cursor-pointer text-slate-200">
                                     <summary className="list-none [&::-webkit-details-marker]:hidden cursor-pointer text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
-                                      DonnÃ©es (JSON)
+                                      Données (JSON)
                                     </summary>
                                     <pre className="mt-2 whitespace-pre-wrap text-[11px] leading-5 rounded-md border border-slate-800/70 bg-slate-950/40 p-2 max-h-60 overflow-y-auto">
                                       {JSON.stringify(row, null, 2)}
@@ -4614,9 +4223,9 @@ function AdminPage() {
                               <tr className="border-b border-slate-800/70">
                                 <th className="py-2 pr-3">ID</th>
                                 <th className="py-2 pr-3">User</th>
-                                <th className="py-2 pr-3">ComplÃ©tÃ© le</th>
+                                <th className="py-2 pr-3">Complété le</th>
                                 <th className="py-2 pr-3">Temps (s)</th>
-                                <th className="py-2">DonnÃ©es</th>
+                                <th className="py-2">Données</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -4700,6 +4309,8 @@ function AdminPage() {
 }
 
 export default AdminPage;
+
+
 
 
 
