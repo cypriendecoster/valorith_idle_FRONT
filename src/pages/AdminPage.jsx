@@ -16,6 +16,7 @@ import StatusBadge from '../components/ui/StatusBadge';
 import AdminHeader from '../components/admin/layout/AdminHeader';
 import AdminTabs from '../components/admin/layout/AdminTabs';
 import BalanceSubTabs from '../components/admin/layout/BalanceSubTabs';
+import BalanceList from '../components/admin/balance/BalanceList';
 import AdminToolbar from '../components/admin/layout/AdminToolbar';
 import AdminSectionTitle from '../components/admin/layout/AdminSectionTitle';
 import { adminService } from '../services/AdminService';
@@ -549,9 +550,9 @@ function AdminPage() {
                 ? { label: 'Skills', err: skillsRes.reason }
                 : realmUnlockCostsRes.status === 'rejected'
                   ? { label: 'Coûts royaumes', err: realmUnlockCostsRes.reason }
-                : playersRes.status === 'rejected'
-                  ? { label: 'Joueurs', err: playersRes.reason }
-                : null;
+                  : playersRes.status === 'rejected'
+                    ? { label: 'Joueurs', err: playersRes.reason }
+                    : null;
 
       if (firstError) {
         console.error('Admin load error:', firstError.label, firstError.err);
@@ -644,15 +645,15 @@ function AdminPage() {
     let cancelled = false;
     setPlayerResourceSaving(false);
 
-      adminService
-        .getPlayerResources(selectedPlayerId)
-        .then((res) => {
-          if (cancelled) return;
-          setSelectedPlayer(res?.data?.user ?? null);
-          setSelectedPlayerResources(res?.data?.resources ?? []);
-          setSelectedPlayerFactories(res?.data?.factories ?? []);
-          setSelectedPlayerSkills(res?.data?.skills ?? []);
-        })
+    adminService
+      .getPlayerResources(selectedPlayerId)
+      .then((res) => {
+        if (cancelled) return;
+        setSelectedPlayer(res?.data?.user ?? null);
+        setSelectedPlayerResources(res?.data?.resources ?? []);
+        setSelectedPlayerFactories(res?.data?.factories ?? []);
+        setSelectedPlayerSkills(res?.data?.skills ?? []);
+      })
       .catch((err) => {
         console.error(err);
         if (cancelled) return;
@@ -1270,9 +1271,9 @@ function AdminPage() {
     }
 
     if (type === 'endgame_requirements') {
-      const prevRow = (endgameRequirements || []).find(
+      const prevRow = (endgameRequirements || [].find(
         (r) => Number(r.id) === numericId
-      );
+      ));
       setEndgameRequirements((prev) =>
         (prev || []).map((r) => (Number(r.id) === numericId ? nextRow : r))
       );
@@ -2123,9 +2124,9 @@ function AdminPage() {
         return;
       }
 
-      const exists = (endgameRequirements || []).some(
+      const exists = (endgameRequirements || [].some(
         (r) => Number(r.resource_id) === Number(payload.resource_id)
-      );
+      ));
       if (exists) {
         setToast({
           type: 'error',
@@ -2197,20 +2198,20 @@ function AdminPage() {
       : activeTab === 'realm_unlock_costs'
         ? 'Balance · Coûts royaumes'
         : activeTab === 'resources'
-        ? 'Balance · Ressources'
-        : activeTab === 'factories'
-          ? 'Balance · Usines'
-          : activeTab === 'skills'
-            ? 'Balance · Skills'
-            : activeTab === 'players'
-              ? 'Joueurs'
-              : activeTab === 'support'
-                ? supportTab === 'tickets'
-                  ? 'Support · Tickets'
-                  : 'Audit · Logs admin'
-                : endgameTab === 'requirements'
-                  ? 'Endgame · Règles'
-                  : 'Endgame · Classement';
+          ? 'Balance · Ressources'
+          : activeTab === 'factories'
+            ? 'Balance · Usines'
+            : activeTab === 'skills'
+              ? 'Balance · Skills'
+              : activeTab === 'players'
+                ? 'Joueurs'
+                : activeTab === 'support'
+                  ? supportTab === 'tickets'
+                    ? 'Support · Tickets'
+                    : 'Audit · Logs admin'
+                  : endgameTab === 'requirements'
+                    ? 'Endgame · Règles'
+                    : 'Endgame · Classement';
 
   const inputClass =
     'w-full rounded-md bg-slate-950/60 border border-slate-700 px-2 py-1 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70';
@@ -2797,9 +2798,8 @@ function AdminPage() {
             {activeTab === 'players' ? (
               <div className="grid gap-4 lg:grid-cols-2">
                 <div
-                  className={`min-w-0 rounded-xl border border-slate-800/70 bg-slate-950/40 p-3 ${
-                    selectedPlayerId ? 'hidden lg:block' : ''
-                  }`}
+                  className={`min-w-0 rounded-xl border border-slate-800/70 bg-slate-950/40 p-3 ${selectedPlayerId ? 'hidden lg:block' : ''
+                    }`}
                 >
                   <div className="flex flex-col gap-2 mb-3">
                     <div className="flex items-center justify-between gap-3">
@@ -2876,7 +2876,7 @@ function AdminPage() {
                           ariaNext="Page suivante joueurs"
                         />
 
-                        
+
                       </div>
                     </div>
                   </div>
@@ -2914,11 +2914,10 @@ function AdminPage() {
                                 setSelectedPlayerFactories([]);
                                 setSelectedPlayerSkills([]);
                               }}
-                              className={`w-full text-left rounded-lg border p-3 transition-colors ${
-                                selected
-                                  ? 'border-amber-400/50 bg-amber-500/10'
-                                  : 'border-slate-800/70 bg-slate-950/30 hover:bg-slate-900/40'
-                              } focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70`}
+                              className={`w-full text-left rounded-lg border p-3 transition-colors ${selected
+                                ? 'border-amber-400/50 bg-amber-500/10'
+                                : 'border-slate-800/70 bg-slate-950/30 hover:bg-slate-900/40'
+                                } focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70`}
                             >
                               <div className="flex items-start justify-between gap-3">
                                 <div>
@@ -2957,152 +2956,150 @@ function AdminPage() {
                       </div>
 
                       <TableShell className="hidden md:block" asChild>
-                      <table className="w-full text-left text-xs">
-                        <thead className="text-[11px] uppercase tracking-widest text-slate-400">
-                          <tr className="border-b border-slate-800/70">
-                            <th className="py-2 pr-3">ID</th>
-                            <th className="py-2 pr-3">Pseudo</th>
-                            <th className="py-2 pr-3">Email</th>
-                            <th className="py-2 pr-3">Rôle</th>
-                            <th className="py-2">Dernière connexion</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {players.map((p) => {
-                            const selected =
-                              Number(selectedPlayerId) === Number(p.id);
-                            const selectPlayer = () => {
-                              setSelectedPlayerId(p.id);
-                              setPlayerResourceId('');
-                              setPlayerResourceAmount('');
-                              setPlayerRealmCode('');
-                              setPlayerRealmActivateId('');
-                              setPlayerFactoryId('');
-                              setPlayerFactoryLevel('');
-                              setPlayerSkillId('');
-                              setPlayerSkillLevel('');
-                              setSelectedPlayerFactories([]);
-                              setSelectedPlayerSkills([]);
-                            };
-                            return (
-                              <tr
-                                key={`player-${p.id}`}
-                                role="button"
-                                tabIndex={0}
-                                aria-label={`Ouvrir le joueur #${p.id}`}
-                                aria-selected={selected}
-                                className={`border-b border-slate-800/60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${
-                                  selected
+                        <table className="w-full text-left text-xs">
+                          <thead className="text-[11px] uppercase tracking-widest text-slate-400">
+                            <tr className="border-b border-slate-800/70">
+                              <th className="py-2 pr-3">ID</th>
+                              <th className="py-2 pr-3">Pseudo</th>
+                              <th className="py-2 pr-3">Email</th>
+                              <th className="py-2 pr-3">Rôle</th>
+                              <th className="py-2">Dernière connexion</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {players.map((p) => {
+                              const selected =
+                                Number(selectedPlayerId) === Number(p.id);
+                              const selectPlayer = () => {
+                                setSelectedPlayerId(p.id);
+                                setPlayerResourceId('');
+                                setPlayerResourceAmount('');
+                                setPlayerRealmCode('');
+                                setPlayerRealmActivateId('');
+                                setPlayerFactoryId('');
+                                setPlayerFactoryLevel('');
+                                setPlayerSkillId('');
+                                setPlayerSkillLevel('');
+                                setSelectedPlayerFactories([]);
+                                setSelectedPlayerSkills([]);
+                              };
+                              return (
+                                <tr
+                                  key={`player-${p.id}`}
+                                  role="button"
+                                  tabIndex={0}
+                                  aria-label={`Ouvrir le joueur #${p.id}`}
+                                  aria-selected={selected}
+                                  className={`border-b border-slate-800/60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${selected
                                     ? 'bg-amber-500/10'
                                     : 'hover:bg-slate-900/40'
-                                }`}
-                                onClick={selectPlayer}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault();
-                                    selectPlayer();
-                                  }
-                                }}
-                              >
-                                <td className="py-2 pr-3 font-mono text-amber-300">
-                                  {p.id}
-                                </td>
-                                <td className="py-2 pr-3 text-slate-100 font-semibold">
-                                  {p.username || '-'}
-                                </td>
-                                <td className="py-2 pr-3 text-slate-300">
-                                  {p.email || '-'}
-                                </td>
-                                <td className="py-2 pr-3 text-slate-300">
-                                  <Badge>{p.role || '-'}</Badge>
-                                </td>
-                                <td className="py-2 text-slate-400">
-                                  {p.last_login_at
-                                    ? new Date(p.last_login_at).toLocaleString(
+                                    }`}
+                                  onClick={selectPlayer}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                      e.preventDefault();
+                                      selectPlayer();
+                                    }
+                                  }}
+                                >
+                                  <td className="py-2 pr-3 font-mono text-amber-300">
+                                    {p.id}
+                                  </td>
+                                  <td className="py-2 pr-3 text-slate-100 font-semibold">
+                                    {p.username || '-'}
+                                  </td>
+                                  <td className="py-2 pr-3 text-slate-300">
+                                    {p.email || '-'}
+                                  </td>
+                                  <td className="py-2 pr-3 text-slate-300">
+                                    <Badge>{p.role || '-'}</Badge>
+                                  </td>
+                                  <td className="py-2 text-slate-400">
+                                    {p.last_login_at
+                                      ? new Date(p.last_login_at).toLocaleString(
                                         'fr-FR'
                                       )
-                                    : '-'}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </TableShell>
+                                      : '-'}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </TableShell>
                     </>
                   )}
                 </div>
 
                 <div
-                  className={`min-w-0 rounded-xl border border-slate-800/70 bg-slate-950/40 p-3 space-y-3 ${
-                    selectedPlayerId ? '' : 'hidden lg:block'
-                  }`}
+                  className={`min-w-0 rounded-xl border border-slate-800/70 bg-slate-950/40 p-3 space-y-3 ${selectedPlayerId ? '' : 'hidden lg:block'
+                    }`}
                 >
                   <div className="sticky top-0 z-20 -mx-3 px-3 py-3 bg-slate-950/85 backdrop-blur border-b border-slate-800/70">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      {selectedPlayerId ? (
-                        <button
-                          type="button"
-                          onClick={() => setSelectedPlayerId(null)}
-                          className="lg:hidden mb-2 px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
-                        >
-                          {'<'} Retour
-                        </button>
-                      ) : null}
-                      <p className="text-xs text-slate-300">Gestion du joueur</p>
-                      {selectedPlayer ? (
-                        <p className="text-sm text-slate-100 mt-1">
-                          <span className="text-amber-300 font-semibold">
-                            {selectedPlayer.username}
-                          </span>{' '}
-                          <span className="text-slate-500">
-                            #{selectedPlayer.id}
-                          </span>
-                        </p>
-                      ) : (
-                        <p className="text-sm text-slate-400 mt-1">
-                          Sélectionne un joueur à gauche.
-                        </p>
-                      )}
-                      {selectedPlayer ? (
-                        <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-slate-300">
-                          <p className="truncate">
-                            <span className="text-slate-500">Email:</span>{' '}
-                            <span className="text-slate-200">
-                              {selectedPlayer.email || '-'}
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        {selectedPlayerId ? (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedPlayerId(null)}
+                            className="lg:hidden mb-2 px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
+                          >
+                            {'<'} Retour
+                          </button>
+                        ) : null}
+                        <p className="text-xs text-slate-300">Gestion du joueur</p>
+                        {selectedPlayer ? (
+                          <p className="text-sm text-slate-100 mt-1">
+                            <span className="text-amber-300 font-semibold">
+                              {selectedPlayer.username}
+                            </span>{' '}
+                            <span className="text-slate-500">
+                              #{selectedPlayer.id}
                             </span>
                           </p>
-                          <p className="truncate">
-                            <span className="text-slate-500">Role:</span>{' '}
-                            <span className="text-slate-200">
-                              {selectedPlayer.role || '-'}
-                            </span>
+                        ) : (
+                          <p className="text-sm text-slate-400 mt-1">
+                            Sélectionne un joueur à gauche.
                           </p>
-                          <p className="col-span-2 truncate">
-                            <span className="text-slate-500">Derniere connexion:</span>{' '}
-                            <span className="text-slate-200">
-                              {selectedPlayer.last_login_at
-                                ? new Date(
+                        )}
+                        {selectedPlayer ? (
+                          <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-slate-300">
+                            <p className="truncate">
+                              <span className="text-slate-500">Email:</span>{' '}
+                              <span className="text-slate-200">
+                                {selectedPlayer.email || '-'}
+                              </span>
+                            </p>
+                            <p className="truncate">
+                              <span className="text-slate-500">Role:</span>{' '}
+                              <span className="text-slate-200">
+                                {selectedPlayer.role || '-'}
+                              </span>
+                            </p>
+                            <p className="col-span-2 truncate">
+                              <span className="text-slate-500">Derniere connexion:</span>{' '}
+                              <span className="text-slate-200">
+                                {selectedPlayer.last_login_at
+                                  ? new Date(
                                     selectedPlayer.last_login_at
                                   ).toLocaleString('fr-FR')
-                                : '-'}
-                            </span>
-                          </p>
-                        </div>
-                      ) : null}
-                    </div>
+                                  : '-'}
+                              </span>
+                            </p>
+                          </div>
+                        ) : null}
+                      </div>
 
-                    {selectedPlayerId && (
-                      <button
-                        type="button"
-                        onClick={() => refreshSelectedPlayer()}
-                        className="px-3 py-1 rounded-md border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
-                      >
-                        Rafraîchir
-                      </button>
-                    )}
-                  </div>
+                      {selectedPlayerId && (
+                        <button
+                          type="button"
+                          onClick={() => refreshSelectedPlayer()}
+                          className="px-3 py-1 rounded-md border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
+                        >
+                          Rafraîchir
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {selectedPlayer && (
@@ -3494,11 +3491,10 @@ function AdminPage() {
                         setSupportTab('tickets');
                         setSupportPage(0);
                       }}
-                      className={`px-3 py-1 rounded-md border text-xs transition-colors ${
-                        supportTab === 'tickets'
-                          ? 'border-amber-400 text-amber-200 bg-amber-500/10'
-                          : 'border-slate-700 text-slate-200 hover:border-amber-400 hover:text-amber-200'
-                      }`}
+                      className={`px-3 py-1 rounded-md border text-xs transition-colors ${supportTab === 'tickets'
+                        ? 'border-amber-400 text-amber-200 bg-amber-500/10'
+                        : 'border-slate-700 text-slate-200 hover:border-amber-400 hover:text-amber-200'
+                        }`}
                     >
                       Tickets{' '}
                       <span className="text-[11px] text-slate-400">
@@ -3511,11 +3507,10 @@ function AdminPage() {
                         setSupportTab('logs');
                         setLogsPage(0);
                       }}
-                      className={`px-3 py-1 rounded-md border text-xs transition-colors ${
-                        supportTab === 'logs'
-                          ? 'border-amber-400 text-amber-200 bg-amber-500/10'
-                          : 'border-slate-700 text-slate-200 hover:border-amber-400 hover:text-amber-200'
-                      }`}
+                      className={`px-3 py-1 rounded-md border text-xs transition-colors ${supportTab === 'logs'
+                        ? 'border-amber-400 text-amber-200 bg-amber-500/10'
+                        : 'border-slate-700 text-slate-200 hover:border-amber-400 hover:text-amber-200'
+                        }`}
                     >
                       Logs{' '}
                       <span className="text-[11px] text-slate-400">
@@ -3629,16 +3624,6 @@ function AdminPage() {
                         ariaPrev="Page précédente tickets"
                         ariaNext="Page suivante tickets"
                       />
-
-                      
-
-                      
-
-                      
-
-                      
-
-                      
                     </div>
                   ) : (
                     <div className="flex flex-wrap items-center gap-2">
@@ -3732,7 +3717,7 @@ function AdminPage() {
                         ariaPrev="Page précédente logs"
                         ariaNext="Page suivante logs"
                       />
-                      
+
                     </div>
                   )}
                 </div>
@@ -3740,9 +3725,8 @@ function AdminPage() {
                 {supportTab === 'tickets' ? (
                   <div className="grid gap-4 lg:grid-cols-2">
                     <div
-                      className={`min-w-0 rounded-xl border border-slate-800/70 bg-slate-950/40 p-3 ${
-                        selectedTicketId ? 'hidden lg:block' : ''
-                      }`}
+                      className={`min-w-0 rounded-xl border border-slate-800/70 bg-slate-950/40 p-3 ${selectedTicketId ? 'hidden lg:block' : ''
+                        }`}
                     >
                       {supportTicketsLoading ? (
                         <div className="space-y-3" aria-busy="true">
@@ -3766,11 +3750,10 @@ function AdminPage() {
                                   key={`ticket-card-${t.id}`}
                                   type="button"
                                   onClick={() => setSelectedTicketId(t.id)}
-                                  className={`w-full text-left rounded-lg border p-3 transition-colors ${
-                                    selected
-                                      ? 'border-amber-400/50 bg-amber-500/10'
-                                      : 'border-slate-800/70 bg-slate-950/30 hover:bg-slate-900/40'
-                                  } focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70`}
+                                  className={`w-full text-left rounded-lg border p-3 transition-colors ${selected
+                                    ? 'border-amber-400/50 bg-amber-500/10'
+                                    : 'border-slate-800/70 bg-slate-950/30 hover:bg-slate-900/40'
+                                    } focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70`}
                                 >
                                   <div className="flex items-start justify-between gap-3">
                                     <p className="text-[11px] text-amber-300 font-mono">
@@ -3804,75 +3787,73 @@ function AdminPage() {
                           </div>
 
                           <TableShell className="hidden md:block" asChild>
-                          <table className="w-full text-left text-xs">
-                            <thead className="text-[11px] uppercase tracking-widest text-slate-400">
-                              <tr className="border-b border-slate-800/70">
-                                <th className="py-2 pr-3">ID</th>
-                                <th className="py-2 pr-3">Status</th>
-                                <th className="py-2 pr-3">User</th>
-                                <th className="py-2 pr-3">Sujet</th>
-                                <th className="py-2">Date</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {supportTickets.map((t) => {
-                                const selected =
-                                  Number(selectedTicketId) === Number(t.id);
-                                return (
-                                  <tr
-                                    key={`ticket-${t.id}`}
-                                    role="button"
-                                    tabIndex={0}
-                                    aria-label={`Ouvrir le ticket #${t.id}`}
-                                    aria-selected={selected}
-                                    className={`border-b border-slate-800/60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${
-                                      selected
+                            <table className="w-full text-left text-xs">
+                              <thead className="text-[11px] uppercase tracking-widest text-slate-400">
+                                <tr className="border-b border-slate-800/70">
+                                  <th className="py-2 pr-3">ID</th>
+                                  <th className="py-2 pr-3">Status</th>
+                                  <th className="py-2 pr-3">User</th>
+                                  <th className="py-2 pr-3">Sujet</th>
+                                  <th className="py-2">Date</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {supportTickets.map((t) => {
+                                  const selected =
+                                    Number(selectedTicketId) === Number(t.id);
+                                  return (
+                                    <tr
+                                      key={`ticket-${t.id}`}
+                                      role="button"
+                                      tabIndex={0}
+                                      aria-label={`Ouvrir le ticket #${t.id}`}
+                                      aria-selected={selected}
+                                      className={`border-b border-slate-800/60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${selected
                                         ? 'bg-amber-500/10'
                                         : 'hover:bg-slate-900/40'
-                                    }`}
-                                    onClick={() => setSelectedTicketId(t.id)}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter' || e.key === ' ') {
-                                        e.preventDefault();
-                                        setSelectedTicketId(t.id);
-                                      }
-                                    }}
-                                  >
-                                    <td className="py-2 pr-3 font-mono text-amber-300">
-                                      {t.id}
-                                    </td>
-                                    <td className="py-2 pr-3 text-slate-200">
-                                      <StatusBadge status={t.status} />
-                                    </td>
-                                    <td className="py-2 pr-3 text-slate-300">
-                                      {t.username || t.email || '-'}
-                                    </td>
-                                    <td className="py-2 pr-3 text-slate-300">
-                                      <span className="block max-w-[240px] truncate">
-                                        {t.subject || t.category || '-'}
-                                      </span>
-                                    </td>
-                                    <td className="py-2 text-slate-400">
-                                      {t.created_at
-                                        ? new Date(t.created_at).toLocaleString(
+                                        }`}
+                                      onClick={() => setSelectedTicketId(t.id)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                          e.preventDefault();
+                                          setSelectedTicketId(t.id);
+                                        }
+                                      }}
+                                    >
+                                      <td className="py-2 pr-3 font-mono text-amber-300">
+                                        {t.id}
+                                      </td>
+                                      <td className="py-2 pr-3 text-slate-200">
+                                        <StatusBadge status={t.status} />
+                                      </td>
+                                      <td className="py-2 pr-3 text-slate-300">
+                                        {t.username || t.email || '-'}
+                                      </td>
+                                      <td className="py-2 pr-3 text-slate-300">
+                                        <span className="block max-w-[240px] truncate">
+                                          {t.subject || t.category || '-'}
+                                        </span>
+                                      </td>
+                                      <td className="py-2 text-slate-400">
+                                        {t.created_at
+                                          ? new Date(t.created_at).toLocaleString(
                                             'fr-FR'
                                           )
-                                        : '-'}
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </TableShell>
+                                          : '-'}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </TableShell>
                         </>
                       )}
                     </div>
 
                     <div
-                      className={`min-w-0 rounded-xl border border-slate-800/70 bg-slate-950/40 p-3 space-y-3 ${
-                        selectedTicketId ? '' : 'hidden lg:block'
-                      }`}
+                      className={`min-w-0 rounded-xl border border-slate-800/70 bg-slate-950/40 p-3 space-y-3 ${selectedTicketId ? '' : 'hidden lg:block'
+                        }`}
                     >
                       {selectedTicketId ? (
                         <button
@@ -3894,7 +3875,7 @@ function AdminPage() {
                               <StatusBadge status={selectedTicket.status} />
                             </p>
 
-                            
+
                             <p className="text-xs text-slate-400 mt-1">
                               {selectedTicket.username || '-'} ·{' '}
                               {selectedTicket.email || '-'}
@@ -3988,8 +3969,8 @@ function AdminPage() {
                                 <dd className="mt-0.5 text-slate-200 font-mono">
                                   {selectedTicket.created_at
                                     ? new Date(selectedTicket.created_at).toLocaleString(
-                                        'fr-FR'
-                                      )
+                                      'fr-FR'
+                                    )
                                     : '-'}
                                 </dd>
                               </div>
@@ -4013,8 +3994,8 @@ function AdminPage() {
                                 >
                                   {selectedTicket.client_time_iso
                                     ? new Date(
-                                        selectedTicket.client_time_iso
-                                      ).toLocaleString('fr-FR')
+                                      selectedTicket.client_time_iso
+                                    ).toLocaleString('fr-FR')
                                     : '-'}
                                 </dd>
                               </div>
@@ -4082,14 +4063,14 @@ function AdminPage() {
                                         setToast(
                                           ok
                                             ? {
-                                                type: 'success',
-                                                message: 'User-Agent copié.',
-                                              }
+                                              type: 'success',
+                                              message: 'User-Agent copié.',
+                                            }
                                             : {
-                                                type: 'error',
-                                                message:
-                                                  'Impossible de copier User-Agent.',
-                                              }
+                                              type: 'error',
+                                              message:
+                                                'Impossible de copier User-Agent.',
+                                            }
                                         )
                                       }
                                     />
@@ -4097,7 +4078,7 @@ function AdminPage() {
                                 />
                               </div>
 
-                              
+
                             </dl>
 
                             {selectedTicket.client_meta ? (
@@ -4110,10 +4091,10 @@ function AdminPage() {
                                   {typeof selectedTicket.client_meta === 'string'
                                     ? selectedTicket.client_meta
                                     : JSON.stringify(
-                                        selectedTicket.client_meta,
-                                        null,
-                                        2
-                                      )}
+                                      selectedTicket.client_meta,
+                                      null,
+                                      2
+                                    )}
                                 </pre>
                               </A11yDetails>
                             ) : null}
@@ -4213,50 +4194,50 @@ function AdminPage() {
                         </div>
 
                         <TableShell className="hidden md:block" asChild>
-                        <table className="min-w-[900px] w-full text-left text-xs">
-                          <thead className="text-[11px] uppercase tracking-widest text-slate-400">
-                            <tr className="border-b border-slate-800/70">
-                              <th className="py-2 pr-3">Date</th>
-                              <th className="py-2 pr-3">User</th>
-                              <th className="py-2 pr-3">Type</th>
-                              <th className="py-2 pr-3">Table</th>
-                              <th className="py-2 pr-3">Target</th>
-                              <th className="py-2">Description</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {filteredLogs.map((l) => (
-                              <tr
-                                key={`log-${l.id}`}
-                                className="border-b border-slate-800/60"
-                              >
-                                <td className="py-2 pr-3 text-slate-400">
-                                  {l.created_at
-                                    ? new Date(l.created_at).toLocaleString(
+                          <table className="min-w-[900px] w-full text-left text-xs">
+                            <thead className="text-[11px] uppercase tracking-widest text-slate-400">
+                              <tr className="border-b border-slate-800/70">
+                                <th className="py-2 pr-3">Date</th>
+                                <th className="py-2 pr-3">User</th>
+                                <th className="py-2 pr-3">Type</th>
+                                <th className="py-2 pr-3">Table</th>
+                                <th className="py-2 pr-3">Target</th>
+                                <th className="py-2">Description</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {filteredLogs.map((l) => (
+                                <tr
+                                  key={`log-${l.id}`}
+                                  className="border-b border-slate-800/60"
+                                >
+                                  <td className="py-2 pr-3 text-slate-400">
+                                    {l.created_at
+                                      ? new Date(l.created_at).toLocaleString(
                                         'fr-FR'
                                       )
-                                    : '-'}
-                                </td>
-                                <td className="py-2 pr-3 text-slate-300 font-mono">
-                                  {l.user_id ?? '-'}
-                                </td>
-                                <td className="py-2 pr-3 text-slate-200">
-                                  {l.action_type || '-'}
-                                </td>
-                                <td className="py-2 pr-3 text-slate-300">
-                                  {l.target_table || '-'}
-                                </td>
-                                <td className="py-2 pr-3 text-slate-300 font-mono">
-                                  {l.target_id ?? '-'}
-                                </td>
-                                <td className="py-2 text-slate-300">
-                                  {l.description || '-'}
-                                </td>
-                              </tr>
-                            ))}
-                        </tbody>
-                        </table>
-                      </TableShell>
+                                      : '-'}
+                                  </td>
+                                  <td className="py-2 pr-3 text-slate-300 font-mono">
+                                    {l.user_id ?? '-'}
+                                  </td>
+                                  <td className="py-2 pr-3 text-slate-200">
+                                    {l.action_type || '-'}
+                                  </td>
+                                  <td className="py-2 pr-3 text-slate-300">
+                                    {l.target_table || '-'}
+                                  </td>
+                                  <td className="py-2 pr-3 text-slate-300 font-mono">
+                                    {l.target_id ?? '-'}
+                                  </td>
+                                  <td className="py-2 text-slate-300">
+                                    {l.description || '-'}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </TableShell>
                       </>
                     )}
                   </div>
@@ -4269,11 +4250,10 @@ function AdminPage() {
                     <button
                       type="button"
                       onClick={() => setEndgameTab('requirements')}
-                      className={`px-3 py-1 rounded-md border text-xs transition-colors ${
-                        endgameTab === 'requirements'
-                          ? 'border-amber-400 text-amber-200 bg-amber-500/10'
-                          : 'border-slate-700 text-slate-200 hover:border-amber-400 hover:text-amber-200'
-                      }`}
+                      className={`px-3 py-1 rounded-md border text-xs transition-colors ${endgameTab === 'requirements'
+                        ? 'border-amber-400 text-amber-200 bg-amber-500/10'
+                        : 'border-slate-700 text-slate-200 hover:border-amber-400 hover:text-amber-200'
+                        }`}
                     >
                       Règles{' '}
                       <span className="text-[11px] text-slate-400">
@@ -4283,11 +4263,10 @@ function AdminPage() {
                     <button
                       type="button"
                       onClick={() => setEndgameTab('rankings')}
-                      className={`px-3 py-1 rounded-md border text-xs transition-colors ${
-                        endgameTab === 'rankings'
-                          ? 'border-amber-400 text-amber-200 bg-amber-500/10'
-                          : 'border-slate-700 text-slate-200 hover:border-amber-400 hover:text-amber-200'
-                      }`}
+                      className={`px-3 py-1 rounded-md border text-xs transition-colors ${endgameTab === 'rankings'
+                        ? 'border-amber-400 text-amber-200 bg-amber-500/10'
+                        : 'border-slate-700 text-slate-200 hover:border-amber-400 hover:text-amber-200'
+                        }`}
                     >
                       Classement{' '}
                       <span className="text-[11px] text-slate-400">
@@ -4385,14 +4364,14 @@ function AdminPage() {
                   ) : (
                     <>
                       <div className="md:hidden space-y-2">
-                        {(endgameRequirements || [])
+                        {(endgameRequirements || []
                           .filter(matchesSearch)
                           .map((row) => {
-                               const type = 'endgame_requirements';
-                               const r = mergedRow(type, row);
-                               const busy = isRowSaving(type, row.id);
-                               const canSave = getRowDiffs(type, row).length > 0;
- 
+                            const type = 'endgame_requirements';
+                            const r = mergedRow(type, row);
+                            const busy = isRowSaving(type, row.id);
+                            const canSave = getRowDiffs(type, row).length > 0;
+
                             return (
                               <div
                                 key={`endgame-req-card-${row.id}`}
@@ -4444,7 +4423,7 @@ function AdminPage() {
                                 <div className="flex flex-wrap gap-2 justify-end pt-1">
                                   <button
                                     type="button"
-                                     disabled={busy || !canSave}
+                                    disabled={busy || !canSave}
                                     onClick={() => requestSave(type, row)}
                                     className="px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed text-slate-900 font-semibold transition-colors text-xs"
                                   >
@@ -4464,95 +4443,95 @@ function AdminPage() {
                                 </div>
                               </div>
                             );
-                          })}
+                          }))}
                       </div>
 
                       <TableShell className="hidden md:block" asChild>
-                      <table className="min-w-[900px] w-full text-left text-xs">
-                        <thead className="text-[11px] uppercase tracking-widest text-slate-400">
-                          <tr className="border-b border-amber-500/20">
-                            <th className="py-3 pr-3">ID</th>
-                            <th className="py-3 pr-3">Ressource</th>
-                            <th className="py-3 pr-3">Montant</th>
-                            <th className="py-3">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {(endgameRequirements || [])
-                            .filter(matchesSearch)
-                            .map((row) => {
-                              const type = 'endgame_requirements';
-                              const r = mergedRow(type, row);
-                              const busy = isRowSaving(type, row.id);
-                              const canSave = getRowDiffs(type, row).length > 0;
+                        <table className="min-w-[900px] w-full text-left text-xs">
+                          <thead className="text-[11px] uppercase tracking-widest text-slate-400">
+                            <tr className="border-b border-amber-500/20">
+                              <th className="py-3 pr-3">ID</th>
+                              <th className="py-3 pr-3">Ressource</th>
+                              <th className="py-3 pr-3">Montant</th>
+                              <th className="py-3">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(endgameRequirements || []
+                              .filter(matchesSearch)
+                              .map((row) => {
+                                const type = 'endgame_requirements';
+                                const r = mergedRow(type, row);
+                                const busy = isRowSaving(type, row.id);
+                                const canSave = getRowDiffs(type, row).length > 0;
 
-                              return (
-                                <tr
-                                  key={`endgame-req-${row.id}`}
-                                  className="border-b border-slate-800/60"
-                                >
-                                  <td className="py-2 pr-3 font-mono text-amber-300">
-                                    {row.id}
-                                  </td>
-                                  <td className="py-2 pr-3">
-                                    <select
-                                      className={inputClass}
-                                      value={r.resource_id ?? ''}
-                                      onChange={(e) =>
-                                        updateField(
-                                          type,
-                                          row.id,
-                                          'resource_id',
-                                          e.target.value
-                                        )
-                                      }
-                                    >
-                                      <option value="">Ressource</option>
-                                      {sortedResources.map((res) => (
-                                        <option
-                                          key={`endgame-req-res-${row.id}-${res.id}`}
-                                          value={res.id}
+                                return (
+                                  <tr
+                                    key={`endgame-req-${row.id}`}
+                                    className="border-b border-slate-800/60"
+                                  >
+                                    <td className="py-2 pr-3 font-mono text-amber-300">
+                                      {row.id}
+                                    </td>
+                                    <td className="py-2 pr-3">
+                                      <select
+                                        className={inputClass}
+                                        value={r.resource_id ?? ''}
+                                        onChange={(e) =>
+                                          updateField(
+                                            type,
+                                            row.id,
+                                            'resource_id',
+                                            e.target.value
+                                          )
+                                        }
+                                      >
+                                        <option value="">Ressource</option>
+                                        {sortedResources.map((res) => (
+                                          <option
+                                            key={`endgame-req-res-${row.id}-${res.id}`}
+                                            value={res.id}
+                                          >
+                                            {res.code} - {res.name} (#{res.id})
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </td>
+                                    <td className="py-2 pr-3">
+                                      <input
+                                        className={inputClass}
+                                        inputMode="decimal"
+                                        value={r.amount ?? ''}
+                                        onChange={(e) =>
+                                          updateField(type, row.id, 'amount', e.target.value)
+                                        }
+                                      />
+                                    </td>
+                                    <td className="py-2">
+                                      <div className="flex flex-wrap gap-2">
+                                        <button
+                                          type="button"
+                                          disabled={busy || !canSave}
+                                          onClick={() => requestSave(type, row)}
+                                          className="px-3 py-1 rounded-md bg-amber-500 hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed text-slate-900 font-semibold transition-colors"
                                         >
-                                          {res.code} - {res.name} (#{res.id})
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </td>
-                                  <td className="py-2 pr-3">
-                                    <input
-                                      className={inputClass}
-                                      inputMode="decimal"
-                                      value={r.amount ?? ''}
-                                      onChange={(e) =>
-                                        updateField(type, row.id, 'amount', e.target.value)
-                                      }
-                                    />
-                                  </td>
-                                  <td className="py-2">
-                                    <div className="flex flex-wrap gap-2">
-                                      <button
-                                        type="button"
-                                        disabled={busy || !canSave}
-                                        onClick={() => requestSave(type, row)}
-                                        className="px-3 py-1 rounded-md bg-amber-500 hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed text-slate-900 font-semibold transition-colors"
-                                      >
-                                        {busy ? 'Sauvegarde…' : 'Sauvegarder'}
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => requestDelete(type, row)}
-                                        className="px-3 py-1 rounded-md border border-red-500/50 text-red-200 hover:bg-red-900/30 transition-colors"
-                                      >
-                                        Supprimer
-                                      </button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                        </tbody>
-                      </table>
-                    </TableShell>
+                                          {busy ? 'Sauvegarde…' : 'Sauvegarder'}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => requestDelete(type, row)}
+                                          className="px-3 py-1 rounded-md border border-red-500/50 text-red-200 hover:bg-red-900/30 transition-colors"
+                                        >
+                                          Supprimer
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              }))}
+                          </tbody>
+                        </table>
+                      </TableShell>
                     </>
                   )
                 ) : (
@@ -4630,1388 +4609,105 @@ function AdminPage() {
                         </div>
 
                         <TableShell className="hidden md:block" asChild>
-                        <table className="min-w-[900px] w-full text-left text-xs">
-                          <thead className="text-[11px] uppercase tracking-widest text-slate-400">
-                            <tr className="border-b border-slate-800/70">
-                              <th className="py-2 pr-3">ID</th>
-                              <th className="py-2 pr-3">User</th>
-                              <th className="py-2 pr-3">Complété le</th>
-                              <th className="py-2 pr-3">Temps (s)</th>
-                              <th className="py-2">Données</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {(endgameRankings || [])
-                              .filter(matchesSearch)
-                              .map((row, idx) => (
-                                <tr
-                                  key={`endgame-rank-${row?.id ?? idx}`}
-                                  className="border-b border-slate-800/60"
-                                >
-                                  <td className="py-2 pr-3 font-mono text-amber-300">
-                                    {row?.id ?? '-'}
-                                  </td>
-                                <td className="py-2 pr-3 text-slate-300 font-mono">
-                                  {row?.username ? `${row.username} (#${row.user_id})` : row?.user_id ?? '-'}
-                                </td>
-                                  <td className="py-2 pr-3 text-slate-300">
-                                    {row?.completed_at
-                                      ? new Date(row.completed_at).toLocaleString('fr-FR')
-                                      : '-'}
-                                  </td>
-                                  <td className="py-2 pr-3 text-slate-300 font-mono">
-                                    {formatDurationSeconds(
-                                      row?.completion_seconds ?? row?.playtime_seconds
-                                    )}
-                                    {row?.completion_seconds != null
-                                      ? ` (${row.completion_seconds}s)`
-                                      : row?.playtime_seconds != null
-                                        ? ` (${row.playtime_seconds}s)`
-                                        : ''}
-                                  </td>
-                                  <td className="py-2 text-slate-300 font-mono">
-                                    <pre className="whitespace-pre-wrap text-[11px] leading-5 max-w-[680px]">
-                                      {JSON.stringify(row, null, 2)}
-                                    </pre>
-                                  </td>
-                                </tr>
-                              ))}
-                          </tbody>
-                        </table>
-                      </TableShell>
+                          <table className="min-w-[900px] w-full text-left text-xs">
+                            <thead className="text-[11px] uppercase tracking-widest text-slate-400">
+                              <tr className="border-b border-slate-800/70">
+                                <th className="py-2 pr-3">ID</th>
+                                <th className="py-2 pr-3">User</th>
+                                <th className="py-2 pr-3">Complété le</th>
+                                <th className="py-2 pr-3">Temps (s)</th>
+                                <th className="py-2">Données</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {(endgameRankings || [])
+                                .filter(matchesSearch)
+                                .map((row, idx) => (
+                                  <tr
+                                    key={`endgame-rank-${row?.id ?? idx}`}
+                                    className="border-b border-slate-800/60"
+                                  >
+                                    <td className="py-2 pr-3 font-mono text-amber-300">
+                                      {row?.id ?? '-'}
+                                    </td>
+                                    <td className="py-2 pr-3 text-slate-300 font-mono">
+                                      {row?.username ? `${row.username} (#${row.user_id})` : row?.user_id ?? '-'}
+                                    </td>
+                                    <td className="py-2 pr-3 text-slate-300">
+                                      {row?.completed_at
+                                        ? new Date(row.completed_at).toLocaleString('fr-FR')
+                                        : '-'}
+                                    </td>
+                                    <td className="py-2 pr-3 text-slate-300 font-mono">
+                                      {formatDurationSeconds(
+                                        row?.completion_seconds ?? row?.playtime_seconds
+                                      )}
+                                      {row?.completion_seconds != null
+                                        ? ` (${row.completion_seconds}s)`
+                                        : row?.playtime_seconds != null
+                                          ? ` (${row.playtime_seconds}s)`
+                                          : ''}
+                                    </td>
+                                    <td className="py-2 text-slate-300 font-mono">
+                                      <pre className="whitespace-pre-wrap text-[11px] leading-5 max-w-[680px]">
+                                        {JSON.stringify(row, null, 2)}
+                                      </pre>
+                                    </td>
+                                  </tr>
+                                ))}
+                            </tbody>
+                          </table>
+                        </TableShell>
                       </>
                     )}
                   </div>
                 )}
               </div>
-            ) : loading ? (
-              <div className="space-y-3" aria-busy="true">
-                <div className="md:hidden">
-                  <SkeletonCards items={6} />
-                </div>
-                <div className="hidden md:block">
-                  <SkeletonTable
-                    rows={10}
-                    cols={activeTab === 'realm_unlock_costs' ? 4 : 6}
-                    titleWidth="w-28"
-                  />
-                </div>
-              </div>
-            ) : visibleRows.length === 0 ? (
-              <p className="text-sm text-slate-300">Aucun résultat.</p>
             ) : (
-              <>
-                <div className="md:hidden space-y-2">
-                  {visibleRows.map((row) => {
-                    const type = activeTab;
-                    const r = mergedRow(type, row);
-                    const busy = isRowSaving(type, row.id);
-                    const canSave = getRowDiffs(type, row).length > 0;
-
-                    const headerLabel =
-                      activeTab === 'realms'
-                        ? `${r.code || row.code || ''} ${r.name || row.name || ''}`.trim()
-                        : activeTab === 'realm_unlock_costs'
-                          ? `Coût #${row.id}`
-                          : `${r.code || row.code || ''} ${r.name || row.name || ''}`.trim();
-
-                    const saveButton = (
-                      <button
-                        type="button"
-                        disabled={busy || !canSave}
-                        onClick={() => requestSave(type, row)}
-                        className="px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed text-slate-900 font-semibold transition-colors text-xs"
-                      >
-                        {busy ? 'Sauvegarde…' : 'Sauvegarder'}
-                      </button>
-                    );
-
-                    return (
-                      <A11yDetailsWrap
-                        key={`balance-card-${type}-${row.id}`}
-                        className="rounded-lg border border-slate-800/70 bg-slate-950/30 p-3"
-                        summaryClassName="list-none [&::-webkit-details-marker]:hidden cursor-pointer select-none"
-                      >
-                        <summary className="cursor-pointer select-none">
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <p className="text-sm text-slate-100 font-semibold">
-                                {headerLabel || '(sans libellé)'}
-                              </p>
-                              <p className="text-[11px] text-slate-500 font-mono mt-0.5">
-                                #{row.id}
-                              </p>
-                            </div>
-                            <p className="text-[11px] text-slate-400 mt-0.5">
-                              Ouvrir
-                            </p>
-                          </div>
-                        </summary>
-
-                        <div className="pt-3 space-y-3">
-                          {activeTab === 'realms' && (
-                            <>
-                              <div className="grid gap-2 sm:grid-cols-2">
-                                <div>
-                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                    Code
-                                  </p>
-                                  <input
-                                    className={inputClass}
-                                    value={r.code ?? ''}
-                                    onChange={(e) =>
-                                      updateField('realms', row.id, 'code', e.target.value)
-                                    }
-                                  />
-                                </div>
-                                <div>
-                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                    Nom
-                                  </p>
-                                  <input
-                                    className={inputClass}
-                                    value={r.name ?? ''}
-                                    onChange={(e) =>
-                                      updateField('realms', row.id, 'name', e.target.value)
-                                    }
-                                  />
-                                </div>
-                              </div>
-                              <div>
-                                <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                  Description
-                                </p>
-                                <input
-                                  className={inputClass}
-                                  value={r.description ?? ''}
-                                  onChange={(e) =>
-                                    updateField(
-                                      'realms',
-                                      row.id,
-                                      'description',
-                                      e.target.value
-                                    )
-                                  }
-                                />
-                              </div>
-                              <div>
-                                <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                  Coûts
-                                </p>
-                                {(() => {
-                                  const costs =
-                                    Array.isArray(row.unlockCosts) && row.unlockCosts.length > 0
-                                      ? row.unlockCosts
-                                      : realmUnlockCostsByRealmId.get(Number(row.id)) || [];
-                                  if (costs.length === 0) {
-                                    return (
-                                      <p className="text-xs text-slate-400 mt-1">-</p>
-                                    );
-                                  }
-                                  return (
-                                    <ul className="mt-1 space-y-0.5">
-                                      {costs.map((c) => {
-                                        const resourceId = Number(
-                                          c.resourceId ?? c.resource_id
-                                        );
-                                        const amount = Number(c.amount ?? 0);
-                                        const label =
-                                          c.resourceName ||
-                                          c.resource_name ||
-                                          resources.find(
-                                            (res) => Number(res.id) === resourceId
-                                          )?.name ||
-                                          resources.find(
-                                            (res) => Number(res.id) === resourceId
-                                          )?.code ||
-                                          c.resourceCode ||
-                                          c.resource_code ||
-                                          `#${resourceId}`;
-
-                                        return (
-                                          <li
-                                            key={`realm-cost-mobile-${row.id}-${resourceId}-${amount}`}
-                                            className="text-xs text-slate-200"
-                                          >
-                                            <span className="font-mono text-amber-200">
-                                              {amount}
-                                            </span>{' '}
-                                            <span className="text-slate-300">
-                                              {label}
-                                            </span>
-                                          </li>
-                                        );
-                                      })}
-                                    </ul>
-                                  );
-                                })()}
-                              </div>
-                              <label className="inline-flex items-center gap-2 text-xs text-slate-200">
-                                <input
-                                  type="checkbox"
-                                  checked={!!r.is_default_unlocked}
-                                  onChange={(e) =>
-                                    updateField(
-                                      'realms',
-                                      row.id,
-                                      'is_default_unlocked',
-                                      e.target.checked
-                                    )
-                                  }
-                                  className="accent-amber-400"
-                                />
-                                Default
-                              </label>
-                            </>
-                          )}
-
-                          {activeTab === 'realm_unlock_costs' && (
-                            <div className="grid gap-2">
-                              <div>
-                                <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                  Royaume
-                                </p>
-                                <select
-                                  className={inputClass}
-                                  value={r.target_realm_id ?? ''}
-                                  onChange={(e) =>
-                                    updateField(
-                                      'realm_unlock_costs',
-                                      row.id,
-                                      'target_realm_id',
-                                      e.target.value
-                                    )
-                                  }
-                                >
-                                  <option value="">-</option>
-                                  {realms.map((realm) => (
-                                    <option
-                                      key={`realm-opt-mobile-${realm.id}`}
-                                      value={realm.id}
-                                    >
-                                      {realm.code} (#{realm.id})
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                              <div>
-                                <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                  Ressource
-                                </p>
-                                <select
-                                  className={inputClass}
-                                  value={r.resource_id ?? ''}
-                                  onChange={(e) =>
-                                    updateField(
-                                      'realm_unlock_costs',
-                                      row.id,
-                                      'resource_id',
-                                      e.target.value
-                                    )
-                                  }
-                                >
-                                  <option value="">-</option>
-                                  {resources.map((res) => (
-                                    <option
-                                      key={`res-opt-mobile-${res.id}`}
-                                      value={res.id}
-                                    >
-                                      {res.code} (#{res.id})
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                              <div>
-                                <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                  Montant
-                                </p>
-                                <input
-                                  className={inputClass}
-                                  inputMode="decimal"
-                                  value={r.amount ?? ''}
-                                  onChange={(e) =>
-                                    updateField(
-                                      'realm_unlock_costs',
-                                      row.id,
-                                      'amount',
-                                      e.target.value
-                                    )
-                                  }
-                                />
-                              </div>
-                            </div>
-                          )}
-
-                          {activeTab === 'resources' && (
-                            <div className="grid gap-2">
-                              <div className="grid gap-2 sm:grid-cols-2">
-                                <div>
-                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                    Realm ID
-                                  </p>
-                                  <input
-                                    className={inputClass}
-                                    inputMode="numeric"
-                                    value={r.realm_id ?? ''}
-                                    onChange={(e) =>
-                                      updateField(
-                                        'resources',
-                                        row.id,
-                                        'realm_id',
-                                        e.target.value
-                                      )
-                                    }
-                                  />
-                                </div>
-                                <div>
-                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                    Code
-                                  </p>
-                                  <input
-                                    className={inputClass}
-                                    value={r.code ?? ''}
-                                    onChange={(e) =>
-                                      updateField(
-                                        'resources',
-                                        row.id,
-                                        'code',
-                                        e.target.value
-                                      )
-                                    }
-                                  />
-                                </div>
-                              </div>
-                              <div>
-                                <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                  Nom
-                                </p>
-                                <input
-                                  className={inputClass}
-                                  value={r.name ?? ''}
-                                  onChange={(e) =>
-                                    updateField(
-                                      'resources',
-                                      row.id,
-                                      'name',
-                                      e.target.value
-                                    )
-                                  }
-                                />
-                              </div>
-                              <div>
-                                <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                  Description
-                                </p>
-                                <input
-                                  className={inputClass}
-                                  value={r.description ?? ''}
-                                  onChange={(e) =>
-                                    updateField(
-                                      'resources',
-                                      row.id,
-                                      'description',
-                                      e.target.value
-                                    )
-                                  }
-                                />
-                              </div>
-                            </div>
-                          )}
-
-                          {activeTab === 'factories' && (
-                            <div className="hidden">
-                              Édition complète disponible sur desktop.
-                            </div>
-                          )}
-
-                          {activeTab === 'factories' && (
-                            <div className="grid gap-2">
-                              <div>
-                                <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                  Royaume
-                                </p>
-                                <select
-                                  className={inputClass}
-                                  value={r.realm_id ?? ''}
-                                  onChange={(e) =>
-                                    updateField('factories', row.id, 'realm_id', e.target.value)
-                                  }
-                                >
-                                  <option value="">Royaume</option>
-                                  {sortedRealms.map((realm) => (
-                                    <option
-                                      key={`factory-realm-mobile-${row.id}-${realm.id}`}
-                                      value={realm.id}
-                                    >
-                                      {realm.code} - {realm.name} (#{realm.id})
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-
-                              <div>
-                                <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                  Ressource
-                                </p>
-                                <select
-                                  className={inputClass}
-                                  value={r.resource_id ?? ''}
-                                  onChange={(e) =>
-                                    updateField('factories', row.id, 'resource_id', e.target.value)
-                                  }
-                                >
-                                  <option value="">Ressource</option>
-                                  {sortedResources.map((res) => (
-                                    <option
-                                      key={`factory-res-mobile-${row.id}-${res.id}`}
-                                      value={res.id}
-                                    >
-                                      {res.code} - {res.name} (#{res.id})
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-
-                              <div className="grid gap-2 sm:grid-cols-2">
-                                <div>
-                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                    Code
-                                  </p>
-                                  <input
-                                    className={inputClass}
-                                    value={r.code ?? ''}
-                                    onChange={(e) =>
-                                      updateField('factories', row.id, 'code', e.target.value)
-                                    }
-                                  />
-                                </div>
-                                <div>
-                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                    Nom
-                                  </p>
-                                  <input
-                                    className={inputClass}
-                                    value={r.name ?? ''}
-                                    onChange={(e) =>
-                                      updateField('factories', row.id, 'name', e.target.value)
-                                    }
-                                  />
-                                </div>
-                              </div>
-
-                              <div className="grid gap-2 sm:grid-cols-2">
-                                <div>
-                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                    Base prod
-                                  </p>
-                                  <input
-                                    className={inputClass}
-                                    inputMode="decimal"
-                                    value={r.base_production ?? ''}
-                                    onChange={(e) =>
-                                      updateField(
-                                        'factories',
-                                        row.id,
-                                        'base_production',
-                                        e.target.value
-                                      )
-                                    }
-                                  />
-                                </div>
-                                <div>
-                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                    Base cost
-                                  </p>
-                                  <input
-                                    className={inputClass}
-                                    inputMode="decimal"
-                                    value={r.base_cost ?? ''}
-                                    onChange={(e) =>
-                                      updateField('factories', row.id, 'base_cost', e.target.value)
-                                    }
-                                  />
-                                </div>
-                              </div>
-
-                              <div className="grid gap-2 sm:grid-cols-2 items-end">
-                                <div>
-                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                    Order
-                                  </p>
-                                  <input
-                                    className={inputClass}
-                                    inputMode="numeric"
-                                    value={r.unlock_order ?? ''}
-                                    onChange={(e) =>
-                                      updateField(
-                                        'factories',
-                                        row.id,
-                                        'unlock_order',
-                                        e.target.value
-                                      )
-                                    }
-                                  />
-                                </div>
-                                <label className="inline-flex items-center gap-2 text-xs text-slate-200">
-                                  <input
-                                    type="checkbox"
-                                    checked={!!r.is_active}
-                                    onChange={(e) =>
-                                      updateField(
-                                        'factories',
-                                        row.id,
-                                        'is_active',
-                                        e.target.checked
-                                      )
-                                    }
-                                    className="accent-amber-400"
-                                  />
-                                  Active
-                                </label>
-                              </div>
-                            </div>
-                          )}
-
-                          {activeTab === 'skills' && (
-                            <div className="grid gap-2">
-                              <div>
-                                <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                  Royaume
-                                </p>
-                                <select
-                                  className={inputClass}
-                                  value={r.realm_id ?? ''}
-                                  onChange={(e) =>
-                                    updateField('skills', row.id, 'realm_id', e.target.value)
-                                  }
-                                >
-                                  <option value="">Royaume</option>
-                                  {sortedRealms.map((realm) => (
-                                    <option
-                                      key={`skill-realm-mobile-${row.id}-${realm.id}`}
-                                      value={realm.id}
-                                    >
-                                      {realm.code} - {realm.name} (#{realm.id})
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-
-                              <div className="grid gap-2 sm:grid-cols-2">
-                                <div>
-                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                    Code
-                                  </p>
-                                  <input
-                                    className={inputClass}
-                                    value={r.code ?? ''}
-                                    onChange={(e) =>
-                                      updateField('skills', row.id, 'code', e.target.value)
-                                    }
-                                  />
-                                </div>
-                                <div>
-                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                    Nom
-                                  </p>
-                                  <input
-                                    className={inputClass}
-                                    value={r.name ?? ''}
-                                    onChange={(e) =>
-                                      updateField('skills', row.id, 'name', e.target.value)
-                                    }
-                                  />
-                                </div>
-                              </div>
-
-                              <div className="grid gap-2 sm:grid-cols-2">
-                                <div>
-                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                    Type
-                                  </p>
-                                  <input
-                                    className={inputClass}
-                                    value={r.effect_type ?? ''}
-                                    onChange={(e) =>
-                                      updateField('skills', row.id, 'effect_type', e.target.value)
-                                    }
-                                  />
-                                </div>
-                                <div>
-                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                    Value
-                                  </p>
-                                  <input
-                                    className={inputClass}
-                                    inputMode="decimal"
-                                    value={r.effect_value ?? ''}
-                                    onChange={(e) =>
-                                      updateField('skills', row.id, 'effect_value', e.target.value)
-                                    }
-                                  />
-                                </div>
-                              </div>
-
-                              <div className="grid gap-2 sm:grid-cols-2">
-                                <div>
-                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                    Max
-                                  </p>
-                                  <input
-                                    className={inputClass}
-                                    inputMode="numeric"
-                                    value={r.max_level ?? ''}
-                                    onChange={(e) =>
-                                      updateField('skills', row.id, 'max_level', e.target.value)
-                                    }
-                                  />
-                                </div>
-                                <div>
-                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                    Order
-                                  </p>
-                                  <input
-                                    className={inputClass}
-                                    inputMode="numeric"
-                                    value={r.unlock_order ?? ''}
-                                    onChange={(e) =>
-                                      updateField('skills', row.id, 'unlock_order', e.target.value)
-                                    }
-                                  />
-                                </div>
-                              </div>
-
-                              <div>
-                                <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                  Cost res
-                                </p>
-                                <select
-                                  className={inputClass}
-                                  value={r.base_cost_resource_id ?? ''}
-                                  onChange={(e) =>
-                                    updateField(
-                                      'skills',
-                                      row.id,
-                                      'base_cost_resource_id',
-                                      e.target.value
-                                    )
-                                  }
-                                >
-                                  <option value="">Ressource</option>
-                                  {sortedResources.map((res) => (
-                                    <option
-                                      key={`skill-costres-mobile-${row.id}-${res.id}`}
-                                      value={res.id}
-                                    >
-                                      {res.code} - {res.name} (#{res.id})
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-
-                              <div className="grid gap-2 sm:grid-cols-2">
-                                <div>
-                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                    Base cost
-                                  </p>
-                                  <input
-                                    className={inputClass}
-                                    inputMode="decimal"
-                                    value={r.base_cost_amount ?? ''}
-                                    onChange={(e) =>
-                                      updateField(
-                                        'skills',
-                                        row.id,
-                                        'base_cost_amount',
-                                        e.target.value
-                                      )
-                                    }
-                                  />
-                                </div>
-                                <div>
-                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                    Growth
-                                  </p>
-                                  <input
-                                    className={inputClass}
-                                    inputMode="decimal"
-                                    value={r.cost_growth_factor ?? ''}
-                                    onChange={(e) =>
-                                      updateField(
-                                        'skills',
-                                        row.id,
-                                        'cost_growth_factor',
-                                        e.target.value
-                                      )
-                                    }
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="flex flex-wrap gap-2 justify-end pt-1">
-                            {saveButton}
-                            <ActionMenu
-                              ariaLabel="Actions"
-                              items={[
-                                {
-                                  key: 'delete',
-                                  label: 'Supprimer',
-                                  danger: true,
-                                  onClick: () => requestDelete(type, row),
-                                },
-                              ]}
-                            />
-                          </div>
-                        </div>
-                      </A11yDetailsWrap>
-                    );
-                  })}
-                </div>
-
-                <TableShell className="hidden md:block" asChild>
-                <table className="min-w-[900px] w-full text-left text-xs">
-                  <thead className="text-[11px] uppercase tracking-widest text-slate-400">
-                    <tr className="border-b border-amber-500/20">
-                      {activeTab === 'realms' && (
-                        <>
-                          <th className="py-3 pr-3">ID</th>
-                          <th className="py-3 pr-3">Code</th>
-                          <th className="py-3 pr-3">Nom</th>
-                          <th className="py-3 pr-3">Description</th>
-                          <th className="py-3 pr-3">Coûts</th>
-                          <th className="py-3 pr-3">Default</th>
-                          <th className="py-3">Actions</th>
-                        </>
-                      )}
-                      {activeTab === 'realm_unlock_costs' && (
-                        <>
-                          <th className="py-3 pr-3">ID</th>
-                          <th className="py-3 pr-3">Royaume</th>
-                          <th className="py-3 pr-3">Ressource</th>
-                          <th className="py-3 pr-3">Montant</th>
-                          <th className="py-3">Actions</th>
-                        </>
-                      )}
-                      {activeTab === 'resources' && (
-                        <>
-                          <th className="py-3 pr-3">ID</th>
-                          <th className="py-3 pr-3">Realm ID</th>
-                          <th className="py-3 pr-3">Code</th>
-                          <th className="py-3 pr-3">Nom</th>
-                          <th className="py-3 pr-3">Description</th>
-                          <th className="py-3">Actions</th>
-                        </>
-                      )}
-                      {activeTab === 'factories' && (
-                        <>
-                          <th className="py-3 pr-3">ID</th>
-                          <th className="py-3 pr-3">Realm</th>
-                          <th className="py-3 pr-3">Res</th>
-                          <th className="py-3 pr-3">Code</th>
-                          <th className="py-3 pr-3">Nom</th>
-                          <th className="py-3 pr-3">Base prod</th>
-                          <th className="py-3 pr-3">Base cost</th>
-                          <th className="py-3 pr-3">Order</th>
-                          <th className="py-3 pr-3">Active</th>
-                          <th className="py-3">Actions</th>
-                        </>
-                      )}
-                      {activeTab === 'skills' && (
-                        <>
-                          <th className="py-3 pr-3">ID</th>
-                          <th className="py-3 pr-3">Realm</th>
-                          <th className="py-3 pr-3">Code</th>
-                          <th className="py-3 pr-3">Nom</th>
-                          <th className="py-3 pr-3">Type</th>
-                          <th className="py-3 pr-3">Value</th>
-                          <th className="py-3 pr-3">Max</th>
-                          <th className="py-3 pr-3">Cost res</th>
-                          <th className="py-3 pr-3">Base cost</th>
-                          <th className="py-3 pr-3">Growth</th>
-                          <th className="py-3 pr-3">Order</th>
-                          <th className="py-3">Actions</th>
-                        </>
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {visibleRows.map((row) => {
-                      const type = activeTab;
-                      const r = mergedRow(type, row);
-                      const busy = isRowSaving(type, row.id);
-                      const canSave = getRowDiffs(type, row).length > 0;
-
-                      const saveButton = (
-                        <button
-                          type="button"
-                          disabled={busy || !canSave}
-                          onClick={() => requestSave(type, row)}
-                          className="px-3 py-1 rounded-md bg-amber-500 hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed text-slate-900 font-semibold transition-colors"
-                        >
-                          {busy ? 'Sauvegarde…' : 'Sauvegarder'}
-                        </button>
-                      );
-
-                      const actionButtons = (
-                        <div className="flex flex-wrap gap-2">
-                          {saveButton}
-                          <button
-                            type="button"
-                            onClick={() => requestDelete(type, row)}
-                            className="px-3 py-1 rounded-md border border-red-500/50 text-red-200 hover:bg-red-900/30 transition-colors"
-                          >
-                            Supprimer
-                          </button>
-                        </div>
-                      );
-
-                      if (activeTab === 'realms') {
-                        const costs =
-                          Array.isArray(row.unlockCosts) && row.unlockCosts.length > 0
-                            ? row.unlockCosts
-                            : realmUnlockCostsByRealmId.get(Number(row.id)) || [];
-
-                        return (
-                          <tr
-                            key={`realms-${row.id}`}
-                            className="border-b border-slate-800/60"
-                          >
-                            <td className="py-2 pr-3 font-mono text-amber-300">
-                              {row.id}
-                            </td>
-                            <td className="py-2 pr-3">
-                              <input
-                                className={inputClass}
-                                value={r.code ?? ''}
-                                onChange={(e) =>
-                                  updateField('realms', row.id, 'code', e.target.value)
-                                }
-                              />
-                            </td>
-                            <td className="py-2 pr-3">
-                              <input
-                                className={inputClass}
-                                value={r.name ?? ''}
-                                onChange={(e) =>
-                                  updateField('realms', row.id, 'name', e.target.value)
-                                }
-                              />
-                            </td>
-                            <td className="py-2 pr-3">
-                              <input
-                                className={inputClass}
-                                value={r.description ?? ''}
-                                onChange={(e) =>
-                                  updateField(
-                                    'realms',
-                                    row.id,
-                                    'description',
-                                    e.target.value
-                                  )
-                                }
-                              />
-                            </td>
-                            <td className="py-2 pr-3">
-                              {costs.length === 0 ? (
-                                <span className="text-slate-500">-</span>
-                              ) : (
-                                <ul className="space-y-0.5">
-                                  {costs.map((c) => {
-                                    const resourceId = Number(
-                                      c.resourceId ?? c.resource_id
-                                    );
-                                    const amount = Number(c.amount ?? 0);
-                                    const label =
-                                      c.resourceName ||
-                                      c.resource_name ||
-                                      resources.find(
-                                        (res) => Number(res.id) === resourceId
-                                      )?.name ||
-                                      resources.find(
-                                        (res) =>
-                                          Number(res.id) === resourceId
-                                      )?.code ||
-                                      c.resourceCode ||
-                                      c.resource_code ||
-                                      `#${resourceId}`;
-
-                                    return (
-                                      <li
-                                        key={`realm-cost-${row.id}-${resourceId}-${amount}`}
-                                        className="text-[11px] text-slate-200"
-                                      >
-                                        <span className="font-mono text-amber-200">
-                                          {amount}
-                                        </span>{' '}
-                                        <span className="text-slate-300">
-                                          {label}
-                                        </span>
-                                      </li>
-                                    );
-                                  })}
-                                </ul>
-                              )}
-                            </td>
-                            <td className="py-2 pr-3">
-                              <label className="inline-flex items-center gap-2 text-xs text-slate-200">
-                                <input
-                                  type="checkbox"
-                                  checked={!!r.is_default_unlocked}
-                                  onChange={(e) =>
-                                    updateField(
-                                      'realms',
-                                      row.id,
-                                      'is_default_unlocked',
-                                      e.target.checked
-                                    )
-                                  }
-                                  className="accent-amber-400"
-                                />
-                                Oui
-                              </label>
-                            </td>
-                            <td className="py-2">{actionButtons}</td>
-                          </tr>
-                        );
-                      }
-
-                      if (activeTab === 'realm_unlock_costs') {
-                        return (
-                          <tr
-                            key={`realm_unlock_costs-${row.id}`}
-                            className="border-b border-slate-800/60"
-                          >
-                            <td className="py-2 pr-3 font-mono text-amber-300">
-                              {row.id}
-                            </td>
-                            <td className="py-2 pr-3">
-                              <select
-                                className={inputClass}
-                                value={r.target_realm_id ?? ''}
-                                onChange={(e) =>
-                                  updateField(
-                                    'realm_unlock_costs',
-                                    row.id,
-                                    'target_realm_id',
-                                    e.target.value
-                                  )
-                                }
-                              >
-                                <option value="">-</option>
-                                {realms.map((realm) => (
-                                  <option key={`realm-opt-${realm.id}`} value={realm.id}>
-                                    {realm.code} (#{realm.id})
-                                  </option>
-                                ))}
-                              </select>
-                            </td>
-                            <td className="py-2 pr-3">
-                              <select
-                                className={inputClass}
-                                value={r.resource_id ?? ''}
-                                onChange={(e) =>
-                                  updateField(
-                                    'realm_unlock_costs',
-                                    row.id,
-                                    'resource_id',
-                                    e.target.value
-                                  )
-                                }
-                              >
-                                <option value="">-</option>
-                                {resources.map((res) => (
-                                  <option key={`res-opt-${res.id}`} value={res.id}>
-                                    {res.code} (#{res.id})
-                                  </option>
-                                ))}
-                              </select>
-                            </td>
-                            <td className="py-2 pr-3">
-                              <input
-                                className={inputClass}
-                                inputMode="decimal"
-                                value={r.amount ?? ''}
-                                onChange={(e) =>
-                                  updateField(
-                                    'realm_unlock_costs',
-                                    row.id,
-                                    'amount',
-                                    e.target.value
-                                  )
-                                }
-                              />
-                            </td>
-                            <td className="py-2">{actionButtons}</td>
-                          </tr>
-                        );
-                      }
-
-                      if (activeTab === 'resources') {
-                        return (
-                          <tr
-                            key={`resources-${row.id}`}
-                            className="border-b border-slate-800/60"
-                          >
-                            <td className="py-2 pr-3 font-mono text-amber-300">
-                              {row.id}
-                            </td>
-                            <td className="py-2 pr-3">
-                              <input
-                                className={inputClass}
-                                inputMode="numeric"
-                                value={r.realm_id ?? ''}
-                                onChange={(e) =>
-                                  updateField(
-                                    'resources',
-                                    row.id,
-                                    'realm_id',
-                                    e.target.value
-                                  )
-                                }
-                              />
-                            </td>
-                            <td className="py-2 pr-3">
-                              <input
-                                className={inputClass}
-                                value={r.code ?? ''}
-                                onChange={(e) =>
-                                  updateField('resources', row.id, 'code', e.target.value)
-                                }
-                              />
-                            </td>
-                            <td className="py-2 pr-3">
-                              <input
-                                className={inputClass}
-                                value={r.name ?? ''}
-                                onChange={(e) =>
-                                  updateField('resources', row.id, 'name', e.target.value)
-                                }
-                              />
-                            </td>
-                            <td className="py-2 pr-3">
-                              <input
-                                className={inputClass}
-                                value={r.description ?? ''}
-                                onChange={(e) =>
-                                  updateField(
-                                    'resources',
-                                    row.id,
-                                    'description',
-                                    e.target.value
-                                  )
-                                }
-                              />
-                            </td>
-                            <td className="py-2">{actionButtons}</td>
-                          </tr>
-                        );
-                      }
-
-                      if (activeTab === 'factories') {
-                        return (
-                          <tr
-                            key={`factories-${row.id}`}
-                            className="border-b border-slate-800/60"
-                          >
-                            <td className="py-2 pr-3 font-mono text-amber-300">
-                              {row.id}
-                            </td>
-                            <td className="py-2 pr-3">
-                              <select
-                                className={inputClass}
-                                value={r.realm_id ?? ''}
-                                onChange={(e) =>
-                                  updateField('factories', row.id, 'realm_id', e.target.value)
-                                }
-                              >
-                                <option value="">Royaume</option>
-                                {sortedRealms.map((realm) => (
-                                  <option key={`factory-realm-${realm.id}`} value={realm.id}>
-                                    {realm.code} - {realm.name} (#{realm.id})
-                                  </option>
-                                ))}
-                              </select>
-                            </td>
-                            <td className="py-2 pr-3">
-                              <select
-                                className={inputClass}
-                                value={r.resource_id ?? ''}
-                                onChange={(e) =>
-                                  updateField(
-                                    'factories',
-                                    row.id,
-                                    'resource_id',
-                                    e.target.value
-                                  )
-                                }
-                              >
-                                <option value="">Ressource</option>
-                                {sortedResources.map((res) => (
-                                  <option key={`factory-res-${res.id}`} value={res.id}>
-                                    {res.code} - {res.name} (#{res.id})
-                                  </option>
-                                ))}
-                              </select>
-                            </td>
-                            <td className="py-2 pr-3">
-                              <input
-                                className={inputClass}
-                                value={r.code ?? ''}
-                                onChange={(e) =>
-                                  updateField('factories', row.id, 'code', e.target.value)
-                                }
-                              />
-                            </td>
-                            <td className="py-2 pr-3">
-                              <input
-                                className={inputClass}
-                                value={r.name ?? ''}
-                                onChange={(e) =>
-                                  updateField('factories', row.id, 'name', e.target.value)
-                                }
-                              />
-                            </td>
-                            <td className="py-2 pr-3">
-                              <input
-                                className={inputClass}
-                                inputMode="decimal"
-                                value={r.base_production ?? ''}
-                                onChange={(e) =>
-                                  updateField(
-                                    'factories',
-                                    row.id,
-                                    'base_production',
-                                    e.target.value
-                                  )
-                                }
-                              />
-                            </td>
-                            <td className="py-2 pr-3">
-                              <input
-                                className={inputClass}
-                                inputMode="decimal"
-                                value={r.base_cost ?? ''}
-                                onChange={(e) =>
-                                  updateField(
-                                    'factories',
-                                    row.id,
-                                    'base_cost',
-                                    e.target.value
-                                  )
-                                }
-                              />
-                            </td>
-                            <td className="py-2 pr-3">
-                              <input
-                                className={inputClass}
-                                inputMode="numeric"
-                                value={r.unlock_order ?? ''}
-                                onChange={(e) =>
-                                  updateField(
-                                    'factories',
-                                    row.id,
-                                    'unlock_order',
-                                    e.target.value
-                                  )
-                                }
-                              />
-                            </td>
-                            <td className="py-2 pr-3">
-                              <label className="inline-flex items-center gap-2 text-xs text-slate-200">
-                                <input
-                                  type="checkbox"
-                                  checked={!!r.is_active}
-                                  onChange={(e) =>
-                                    updateField(
-                                      'factories',
-                                      row.id,
-                                      'is_active',
-                                      e.target.checked
-                                    )
-                                  }
-                                  className="accent-amber-400"
-                                />
-                                Oui
-                              </label>
-                            </td>
-                            <td className="py-2">{actionButtons}</td>
-                          </tr>
-                        );
-                      }
-
-                      return (
-                        <tr
-                          key={`skills-${row.id}`}
-                          className="border-b border-slate-800/60"
-                        >
-                          <td className="py-2 pr-3 font-mono text-amber-300">
-                            {row.id}
-                          </td>
-                          <td className="py-2 pr-3">
-                            <select
-                              className={inputClass}
-                              value={r.realm_id ?? ''}
-                              onChange={(e) =>
-                                updateField('skills', row.id, 'realm_id', e.target.value)
-                              }
-                            >
-                              <option value="">Royaume</option>
-                              {sortedRealms.map((realm) => (
-                                <option key={`skill-realm-${realm.id}`} value={realm.id}>
-                                  {realm.code} - {realm.name} (#{realm.id})
-                                </option>
-                              ))}
-                            </select>
-                          </td>
-                          <td className="py-2 pr-3">
-                            <input
-                              className={inputClass}
-                              value={r.code ?? ''}
-                              onChange={(e) =>
-                                updateField('skills', row.id, 'code', e.target.value)
-                              }
-                            />
-                          </td>
-                          <td className="py-2 pr-3">
-                            <input
-                              className={inputClass}
-                              value={r.name ?? ''}
-                              onChange={(e) =>
-                                updateField('skills', row.id, 'name', e.target.value)
-                              }
-                            />
-                          </td>
-                          <td className="py-2 pr-3">
-                            <input
-                              className={inputClass}
-                              value={r.effect_type ?? ''}
-                              onChange={(e) =>
-                                updateField(
-                                  'skills',
-                                  row.id,
-                                  'effect_type',
-                                  e.target.value
-                                )
-                              }
-                            />
-                          </td>
-                          <td className="py-2 pr-3">
-                            <input
-                              className={inputClass}
-                              inputMode="decimal"
-                              value={r.effect_value ?? ''}
-                              onChange={(e) =>
-                                updateField(
-                                  'skills',
-                                  row.id,
-                                  'effect_value',
-                                  e.target.value
-                                )
-                              }
-                            />
-                          </td>
-                          <td className="py-2 pr-3">
-                            <input
-                              className={inputClass}
-                              inputMode="numeric"
-                              value={r.max_level ?? ''}
-                              onChange={(e) =>
-                                updateField('skills', row.id, 'max_level', e.target.value)
-                              }
-                            />
-                          </td>
-                          <td className="py-2 pr-3">
-                            <select
-                              className={inputClass}
-                              value={r.base_cost_resource_id ?? ''}
-                              onChange={(e) =>
-                                updateField(
-                                  'skills',
-                                  row.id,
-                                  'base_cost_resource_id',
-                                  e.target.value
-                                )
-                              }
-                            >
-                              <option value="">Ressource</option>
-                              {sortedResources.map((res) => (
-                                <option key={`skill-costres-${res.id}`} value={res.id}>
-                                  {res.code} - {res.name} (#{res.id})
-                                </option>
-                              ))}
-                            </select>
-                          </td>
-                          <td className="py-2 pr-3">
-                            <input
-                              className={inputClass}
-                              inputMode="decimal"
-                              value={r.base_cost_amount ?? ''}
-                              onChange={(e) =>
-                                updateField(
-                                  'skills',
-                                  row.id,
-                                  'base_cost_amount',
-                                  e.target.value
-                                )
-                              }
-                            />
-                          </td>
-                          <td className="py-2 pr-3">
-                            <input
-                              className={inputClass}
-                              inputMode="decimal"
-                              value={r.cost_growth_factor ?? ''}
-                              onChange={(e) =>
-                                updateField(
-                                  'skills',
-                                  row.id,
-                                  'cost_growth_factor',
-                                  e.target.value
-                                )
-                              }
-                            />
-                          </td>
-                          <td className="py-2 pr-3">
-                            <input
-                              className={inputClass}
-                              inputMode="numeric"
-                              value={r.unlock_order ?? ''}
-                              onChange={(e) =>
-                                updateField(
-                                  'skills',
-                                  row.id,
-                                  'unlock_order',
-                                  e.target.value
-                                )
-                              }
-                            />
-                          </td>
-                          <td className="py-2">{actionButtons}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </TableShell>
-              </>
+              <BalanceList
+                activeTab={activeTab}
+                loading={loading}
+                visibleRows={visibleRows}
+                inputClass={inputClass}
+                mergedRow={mergedRow}
+                isRowSaving={isRowSaving}
+                getRowDiffs={getRowDiffs}
+                requestSave={requestSave}
+                requestDelete={requestDelete}
+                updateField={updateField}
+                realmUnlockCostsByRealmId={realmUnlockCostsByRealmId}
+                resources={resources}
+                realms={realms}
+                sortedRealms={sortedRealms}
+                sortedResources={sortedResources}
+              />
             )}
+              </div>
+            </div>
+
+          <div className="mt-10 text-center">
+            <button
+              type="button"
+              onClick={() => navigate('/game')}
+              className="inline-flex items-center px-4 py-2 rounded-lg border border-amber-400/60 text-amber-200 text-xs md:text-sm hover:bg-amber-500/10 transition-colors focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
+            >
+              Retour au jeu
+            </button>
           </div>
         </div>
-
-        <div className="mt-10 text-center">
-          <button
-            type="button"
-            onClick={() => navigate('/game')}
-            className="inline-flex items-center px-4 py-2 rounded-lg border border-amber-400/60 text-amber-200 text-xs md:text-sm hover:bg-amber-500/10 transition-colors focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
-          >
-            Retour au jeu
-          </button>
-        </div>
       </div>
-    </div>
   );
 }
 
 export default AdminPage;
+
+
+
+
+
+
+
+
+
+
+
