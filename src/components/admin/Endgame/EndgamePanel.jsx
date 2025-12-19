@@ -1,3 +1,5 @@
+import InfoBanner from '../../ui/InfoBanner';
+
 export default function EndgamePanel({
   endgameTab = 'requirements',
   onTabChange,
@@ -9,9 +11,13 @@ export default function EndgamePanel({
   requirementsContent,
   rankingsContent,
   createForm,
+  feedback,
 }) {
   return (
     <div className="space-y-3">
+      {feedback ? (
+        <InfoBanner tone="success">{feedback}</InfoBanner>
+      ) : null}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap gap-2">
           <button
@@ -51,6 +57,7 @@ export default function EndgamePanel({
           <button
             type="button"
             onClick={onRefresh}
+            aria-label="Rafraichir les donnees endgame"
             disabled={loading}
             className="px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
           >

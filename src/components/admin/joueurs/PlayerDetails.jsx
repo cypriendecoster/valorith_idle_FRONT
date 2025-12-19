@@ -58,7 +58,14 @@ export default function PlayerDetails({
       />
 
       {selectedPlayer && (
-        <div className="space-y-3">
+        <div className="space-y-3" aria-live="polite" aria-atomic="true">
+          <div className="lg:hidden rounded-lg border border-amber-500/30 bg-amber-950/30 px-3 py-2 text-xs text-amber-200">
+            Joueur selectionne :{' '}
+            <span className="font-semibold text-amber-100">
+              {selectedPlayer.username || '(sans pseudo)'}
+            </span>{' '}
+            <span className="text-amber-300/80">#{selectedPlayer.id}</span>
+          </div>
           <PlayerActionsRealms
             inputClass={inputClass}
             realms={realms}

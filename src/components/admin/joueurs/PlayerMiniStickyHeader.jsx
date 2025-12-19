@@ -37,6 +37,7 @@ export default function PlayerMiniStickyHeader({
           <button
             type="button"
             onClick={onRefresh}
+            aria-label="Rafraichir les donnees du joueur"
             className="px-3 py-1 rounded-md border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
           >
             Rafraichir

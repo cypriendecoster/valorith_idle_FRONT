@@ -1,40 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import Toast from '../components/Toast';
-import ActionMenu from '../components/ui/ActionMenu';
-import A11yDetails from '../components/ui/A11yDetails';
-import A11yDetailsWrap from '../components/ui/A11yDetailsWrap';
 import ConfirmModal from '../components/ui/ConfirmModal';
-import CopyButton from '../components/ui/CopyButton';
-import Badge from '../components/ui/Badge';
-import KeyValueRow from '../components/ui/KeyValueRow';
-import PaginationControls from '../components/ui/PaginationControls';
-import TableShell from '../components/ui/TableShell';
-import SkeletonCards from '../components/ui/SkeletonCards';
-import SkeletonTable from '../components/ui/SkeletonTable';
-import StatusBadge from '../components/ui/StatusBadge';
 import AdminHeader from '../components/admin/layout/AdminHeader';
 import AdminTabs from '../components/admin/layout/AdminTabs';
 import BalanceSubTabs from '../components/admin/layout/BalanceSubTabs';
 import CreateBalanceForm from '../components/admin/balance/CreateBalanceForm';
 import BalanceList from '../components/admin/balance/BalanceList';
-import PlayersPanel from '../components/admin/joueurs/PlayersPanel';
-import SupportPanel from '../components/admin/Support/SupportPanel';
-import MaintenanceCard from '../components/admin/Support/MaintenanceCard';
-import SupportToolbar from '../components/admin/Support/SupportToolbar';
-import TicketsList from '../components/admin/Support/TicketsList';
-import TicketDetail from '../components/admin/Support/TicketDetail';
-import LogsToolbar from '../components/admin/Support/LogsToolbar';
-import LogsList from '../components/admin/Support/LogsList';
-import EndgamePanel from '../components/admin/Endgame/EndgamePanel';
-import EndgameCreateRequirementForm from '../components/admin/Endgame/EndgameCreateRequirementForm';
-import EndgameRequirementsList from '../components/admin/Endgame/EndgameRequirementsList';
-import EndgameRankingsTable from '../components/admin/Endgame/EndgameRankingsTable';
+import AdminPlayersSection from '../components/admin/sections/AdminPlayersSection';
+import AdminSupportSection from '../components/admin/sections/AdminSupportSection';
+import AdminEndgameSection from '../components/admin/sections/AdminEndgameSection';
 import usePlayersState from '../hooks/admin/usePlayersState';
 import useSupportState from '../hooks/admin/useSupportState.jsx';
 import useEndgameState from '../hooks/admin/useEndgameState.jsx';
 import AdminToolbar from '../components/admin/layout/AdminToolbar';
 import AdminSectionTitle from '../components/admin/layout/AdminSectionTitle';
+import InfoBanner from '../components/ui/InfoBanner';
 import { adminService } from '../services/AdminService';
 import { authService } from '../services/AuthService';
 import { normalizeText, toNumberOrNull, toNonNegativeIntOrNull, toBooleanInt, formatDurationSeconds, clampInt, normalizeSortDir, parseBigIntLoose, formatIntegerFull, formatIntegerCompact } from '../utils/adminFormatters';
@@ -129,6 +110,7 @@ function AdminPage() {
   const [endgameRequirements, setEndgameRequirements] = useState([]);
   const [endgameRankings, setEndgameRankings] = useState([]);
   const [endgameLoading, setEndgameLoading] = useState(false);
+  const [endgameFeedback, setEndgameFeedback] = useState('');
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTitle, setConfirmTitle] = useState('');
@@ -242,6 +224,12 @@ function AdminPage() {
   }, [toast]);
 
   useEffect(() => {
+    if (!endgameFeedback) return;
+    const id = setTimeout(() => setEndgameFeedback(''), 3000);
+    return () => clearTimeout(id);
+  }, [endgameFeedback]);
+
+  useEffect(() => {
     if (!isAdmin) return;
     if (!urlHydrated) return;
 
@@ -344,7 +332,7 @@ function AdminPage() {
           type: 'error',
           message:
             err?.response?.data?.message ||
-            'Erreur lors de la récupération du mode maintenance.',
+            'Erreur lors de la rï¿½cupï¿½ration du mode maintenance.',
         });
       })
       .finally(() => {
@@ -380,7 +368,7 @@ function AdminPage() {
 
       setToast({
         type: 'success',
-        message: enabled ? 'Maintenance activée.' : 'Maintenance désactivée.',
+        message: enabled ? 'Maintenance activï¿½e.' : 'Maintenance dï¿½sactivï¿½e.',
       });
     } catch (err) {
       console.error(err);
@@ -389,7 +377,7 @@ function AdminPage() {
         type: 'error',
         message:
           err?.response?.data?.message ||
-          'Erreur lors de la mise à jour de la maintenance.',
+          'Erreur lors de la mise ï¿½ jour de la maintenance.',
       });
     } finally {
       setMaintenanceSaving(false);
@@ -469,7 +457,7 @@ function AdminPage() {
               : skillsRes.status === 'rejected'
                 ? { label: 'Skills', err: skillsRes.reason }
                 : realmUnlockCostsRes.status === 'rejected'
-                  ? { label: 'Coûts royaumes', err: realmUnlockCostsRes.reason }
+                  ? { label: 'Coï¿½ts royaumes', err: realmUnlockCostsRes.reason }
                   : playersRes.status === 'rejected'
                     ? { label: 'Joueurs', err: playersRes.reason }
                     : null;
@@ -534,7 +522,7 @@ function AdminPage() {
             type: 'error',
             message:
               err?.response?.data?.message ||
-              'Erreur lors de la récupération des joueurs.',
+              'Erreur lors de la rï¿½cupï¿½ration des joueurs.',
           });
         })
         .finally(() => {
@@ -803,7 +791,7 @@ function AdminPage() {
             type: 'error',
             message:
               reqRes.reason?.response?.data?.message ||
-              'Erreur lors du chargement des règles endgame.',
+              'Erreur lors du chargement des rï¿½gles endgame.',
           });
         }
 
@@ -903,7 +891,7 @@ function AdminPage() {
     const ok = await copyToClipboard(value);
     setToast(
       ok
-        ? { type: 'success', message: `${label} copié.` }
+        ? { type: 'success', message: `${label} copiï¿½.` }
         : { type: 'error', message: `Impossible de copier ${label}.` }
     );
   };
@@ -941,7 +929,7 @@ function AdminPage() {
     } catch (err) {
       console.error(err);
       setConfirmError(
-        err?.response?.data?.message || "Action impossible. Réessaie."
+        err?.response?.data?.message || "Action impossible. Rï¿½essaie."
       );
     } finally {
       setConfirmLoading(false);
@@ -1215,7 +1203,7 @@ function AdminPage() {
     const key = `${type}:${id}`;
     const rowEdits = edits[key];
     if (!rowEdits || Object.keys(rowEdits).length === 0 || getRowDiffs(type, row).length === 0) {
-      setToast({ type: 'success', message: 'Aucune modification à sauvegarder.' });
+      setToast({ type: 'success', message: 'Aucune modification ï¿½ sauvegarder.' });
       return false;
     }
 
@@ -1299,7 +1287,7 @@ function AdminPage() {
       }
 
       clearRowEdits(type, id);
-      setToast({ type: 'success', message: 'Mise à jour enregistrée.' });
+      setToast({ type: 'success', message: 'Mise ï¿½ jour enregistrï¿½e.' });
       return true;
     } catch (err) {
       console.error(err);
@@ -1307,7 +1295,7 @@ function AdminPage() {
         type: 'error',
         message:
           err?.response?.data?.message ||
-          "Impossible d'enregistrer la mise à jour.",
+          "Impossible d'enregistrer la mise ï¿½ jour.",
       });
       return false;
     } finally {
@@ -1322,7 +1310,7 @@ function AdminPage() {
     const key = `${type}:${id}`;
     const rowEdits = edits[key];
     if (!rowEdits || Object.keys(rowEdits).length === 0 || getRowDiffs(type, row).length === 0) {
-      setToast({ type: 'success', message: 'Aucune modification à sauvegarder.' });
+      setToast({ type: 'success', message: 'Aucune modification ï¿½ sauvegarder.' });
       return;
     }
 
@@ -1490,7 +1478,7 @@ function AdminPage() {
           setToast({
             type: 'error',
             message:
-              'Impossible : ressource déjà créée pour ce royaume. Effectuez une modification.',
+              'Impossible : ressource dï¿½jï¿½ crï¿½ï¿½e pour ce royaume. Effectuez une modification.',
           });
           return;
         }
@@ -1500,14 +1488,14 @@ function AdminPage() {
         setRealmUnlockCosts(refreshed?.data?.items ?? []);
       }
 
-      setToast({ type: 'success', message: 'Création effectuée.' });
+      setToast({ type: 'success', message: 'Crï¿½ation effectuï¿½e.' });
       setCreateOpen(false);
     } catch (err) {
       console.error(err);
       setToast({
         type: 'error',
         message:
-          err?.response?.data?.message || "Impossible de créer l'élément.",
+          err?.response?.data?.message || "Impossible de crï¿½er l'ï¿½lï¿½ment.",
       });
     } finally {
       setCreateSaving(false);
@@ -1523,7 +1511,7 @@ function AdminPage() {
 
     openConfirm({
       title: 'Suppression',
-      message: `Attention, supprimer est définitif. Cette action est irréversible.\n\nConfirmer la suppression de #${id}${label} ?`,
+      message: `Attention, supprimer est dï¿½finitif. Cette action est irrï¿½versible.\n\nConfirmer la suppression de #${id}${label} ?`,
       confirmLabel: 'Supprimer',
       danger: true,
       action: () => handleDelete(type, row),
@@ -1557,14 +1545,14 @@ function AdminPage() {
           prev.filter((r) => Number(r.id) !== Number(id))
         );
       }
-      setToast({ type: 'success', message: 'Suppression effectuée.' });
+      setToast({ type: 'success', message: 'Suppression effectuï¿½e.' });
       return true;
     } catch (err) {
       console.error(err);
       setToast({
         type: 'error',
         message:
-          err?.response?.data?.message || "Impossible de supprimer l'élément.",
+          err?.response?.data?.message || "Impossible de supprimer l'ï¿½lï¿½ment.",
       });
       return false;
     }
@@ -1595,7 +1583,7 @@ function AdminPage() {
         amount,
       });
       await refreshSelectedPlayer();
-      setToast({ type: 'success', message: 'Ressource ajoutée.' });
+      setToast({ type: 'success', message: 'Ressource ajoutï¿½e.' });
     } catch (err) {
       console.error(err);
       setToast({
@@ -1630,7 +1618,7 @@ function AdminPage() {
         amount,
       });
       await refreshSelectedPlayer();
-      setToast({ type: 'success', message: 'Ressource ajoutée.' });
+      setToast({ type: 'success', message: 'Ressource ajoutï¿½e.' });
     } catch (err) {
       console.error(err);
       setToast({
@@ -1667,7 +1655,7 @@ function AdminPage() {
         amount: -amount,
       });
       await refreshSelectedPlayer();
-      setToast({ type: 'success', message: 'Ressource retirée.' });
+      setToast({ type: 'success', message: 'Ressource retirï¿½e.' });
     } catch (err) {
       console.error(err);
       setToast({
@@ -1689,7 +1677,7 @@ function AdminPage() {
       return;
     }
     if (amount < 0) {
-      setToast({ type: 'error', message: 'Le montant doit être = 0.' });
+      setToast({ type: 'error', message: 'Le montant doit ï¿½tre = 0.' });
       return;
     }
 
@@ -1700,13 +1688,13 @@ function AdminPage() {
         amount,
       });
       await refreshSelectedPlayer();
-      setToast({ type: 'success', message: 'Ressource mise à jour.' });
+      setToast({ type: 'success', message: 'Ressource mise ï¿½ jour.' });
     } catch (err) {
       console.error(err);
       setToast({
         type: 'error',
         message:
-          err?.response?.data?.message || 'Impossible de mettre à jour la ressource.',
+          err?.response?.data?.message || 'Impossible de mettre ï¿½ jour la ressource.',
       });
     } finally {
       setPlayerResourceSaving(false);
@@ -1724,13 +1712,13 @@ function AdminPage() {
     try {
       setPlayerResourceSaving(true);
       await adminService.unlockPlayerRealm(selectedPlayerId, { realmCode });
-      setToast({ type: 'success', message: 'Royaume débloqué.' });
+      setToast({ type: 'success', message: 'Royaume dï¿½bloquï¿½.' });
     } catch (err) {
       console.error(err);
       setToast({
         type: 'error',
         message:
-          err?.response?.data?.message || "Impossible de débloquer le royaume.",
+          err?.response?.data?.message || "Impossible de dï¿½bloquer le royaume.",
       });
     } finally {
       setPlayerResourceSaving(false);
@@ -1748,7 +1736,7 @@ function AdminPage() {
     try {
       setPlayerResourceSaving(true);
       await adminService.activatePlayerRealm(selectedPlayerId, { realmId });
-      setToast({ type: 'success', message: 'Royaume activé.' });
+      setToast({ type: 'success', message: 'Royaume activï¿½.' });
     } catch (err) {
       console.error(err);
       setToast({
@@ -1776,7 +1764,7 @@ function AdminPage() {
         factoryId,
         level,
       });
-      setToast({ type: 'success', message: 'Niveau usine mis à jour.' });
+      setToast({ type: 'success', message: 'Niveau usine mis ï¿½ jour.' });
     } catch (err) {
       console.error(err);
       setToast({
@@ -1801,7 +1789,7 @@ function AdminPage() {
     try {
       setPlayerResourceSaving(true);
       await adminService.setPlayerSkillLevel(selectedPlayerId, { skillId, level });
-      setToast({ type: 'success', message: 'Niveau skill mis à jour.' });
+      setToast({ type: 'success', message: 'Niveau skill mis ï¿½ jour.' });
     } catch (err) {
       console.error(err);
       setToast({
@@ -1817,16 +1805,16 @@ function AdminPage() {
     if (!selectedPlayerId || !selectedPlayer) return;
 
     openConfirm({
-      title: 'Réinitialisation',
-      message: `Attention, réinitialiser est définitif.\n\nRéinitialiser la progression de ${selectedPlayer.username} (#${selectedPlayer.id}) ?`,
-      confirmLabel: 'Réinitialiser',
+      title: 'Rï¿½initialisation',
+      message: `Attention, rï¿½initialiser est dï¿½finitif.\n\nRï¿½initialiser la progression de ${selectedPlayer.username} (#${selectedPlayer.id}) ?`,
+      confirmLabel: 'Rï¿½initialiser',
       danger: true,
       action: async () => {
         try {
           setPlayerDangerLoading(true);
           await adminService.resetPlayer(selectedPlayerId);
           await refreshSelectedPlayer();
-          setToast({ type: 'success', message: 'Progression réinitialisée.' });
+          setToast({ type: 'success', message: 'Progression rï¿½initialisï¿½e.' });
         } catch (err) {
           console.error(err);
           setToast({
@@ -1847,7 +1835,7 @@ function AdminPage() {
 
     openConfirm({
       title: 'Suppression de compte',
-      message: `Attention, supprimer est définitif.\n\nTape SUPPRIMER pour confirmer la suppression du compte ${selectedPlayer.username} (#${selectedPlayer.id}).`,
+      message: `Attention, supprimer est dï¿½finitif.\n\nTape SUPPRIMER pour confirmer la suppression du compte ${selectedPlayer.username} (#${selectedPlayer.id}).`,
       confirmLabel: 'Supprimer',
       danger: true,
       expectedText: 'SUPPRIMER',
@@ -1863,7 +1851,7 @@ function AdminPage() {
           setSelectedPlayerResources([]);
           setSelectedPlayerFactories([]);
           setSelectedPlayerSkills([]);
-          setToast({ type: 'success', message: 'Compte supprimé.' });
+          setToast({ type: 'success', message: 'Compte supprimï¿½.' });
         } catch (err) {
           console.error(err);
           setToast({
@@ -1885,7 +1873,7 @@ function AdminPage() {
     return;
     if (
       false && (
-        `Réinitialiser la progression de ${selectedPlayer.username} (#${selectedPlayer.id}) ?`
+        `Rï¿½initialiser la progression de ${selectedPlayer.username} (#${selectedPlayer.id}) ?`
       )
     ) {
       return;
@@ -1895,7 +1883,7 @@ function AdminPage() {
       setPlayerDangerLoading(true);
       await adminService.resetPlayer(selectedPlayerId);
       await refreshSelectedPlayer();
-      setToast({ type: 'success', message: 'Progression réinitialisée.' });
+      setToast({ type: 'success', message: 'Progression rï¿½initialisï¿½e.' });
     } catch (err) {
       console.error(err);
       setToast({
@@ -1921,7 +1909,7 @@ function AdminPage() {
       setSelectedPlayerId(null);
       setSelectedPlayer(null);
       setSelectedPlayerResources([]);
-      setToast({ type: 'success', message: 'Compte supprimé.' });
+      setToast({ type: 'success', message: 'Compte supprimï¿½.' });
     } catch (err) {
       console.error(err);
       setToast({
@@ -1964,7 +1952,7 @@ function AdminPage() {
     if (!ticketId) return;
     try {
       await adminService.updateSupportTicketStatus(ticketId, status);
-      setToast({ type: 'success', message: 'Ticket mis à jour.' });
+      setToast({ type: 'success', message: 'Ticket mis ï¿½ jour.' });
       await refreshSupportTickets();
     } catch (err) {
       console.error(err);
@@ -2019,7 +2007,7 @@ function AdminPage() {
         type: 'error',
         message:
           err?.response?.data?.message ||
-          "Erreur lors du rafraîchissement de l'endgame.",
+          "Erreur lors du rafraï¿½chissement de l'endgame.",
       });
     } finally {
       setEndgameLoading(false);
@@ -2050,7 +2038,7 @@ function AdminPage() {
       if (exists) {
         setToast({
           type: 'error',
-          message: 'Cette ressource est déjà présente dans les règles endgame.',
+          message: 'Cette ressource est dï¿½jï¿½ prï¿½sente dans les rï¿½gles endgame.',
         });
         return;
       }
@@ -2058,7 +2046,7 @@ function AdminPage() {
       await adminService.createEndgameRequirement(payload);
       const reqRes = await adminService.getEndgameRequirements();
       setEndgameRequirements(reqRes?.data ?? []);
-      setToast({ type: 'success', message: 'Règle créée.' });
+      setToast({ type: 'success', message: 'Rï¿½gle crï¿½ï¿½e.' });
       setCreateOpen(false);
       setCreateDraft({});
     } catch (err) {
@@ -2067,7 +2055,7 @@ function AdminPage() {
         type: 'error',
         message:
           err?.response?.data?.message ||
-          "Impossible de créer la règle endgame.",
+          "Impossible de crï¿½er la rï¿½gle endgame.",
       });
     } finally {
       setCreateSaving(false);
@@ -2099,14 +2087,14 @@ function AdminPage() {
       label: 'Balance',
       hint: `${realms.length + realmUnlockCosts.length + resources.length + factories.length + skills.length} items`,
     },
-    { key: 'endgame', label: 'Endgame', hint: 'Règles + classement' },
+    { key: 'endgame', label: 'Endgame', hint: 'Rï¿½gles + classement' },
     { key: 'players', label: 'Joueurs', hint: `${playersTotal || players.length} joueurs` },
     { key: 'support', label: 'Support & Logs', hint: 'Ops + audit' },
   ];
 
   const balanceTabs = [
     { key: 'realms', label: 'Royaumes', count: realms.length },
-    { key: 'realm_unlock_costs', label: 'Coûts royaumes', count: realmUnlockCosts.length },
+    { key: 'realm_unlock_costs', label: 'Coï¿½ts royaumes', count: realmUnlockCosts.length },
     { key: 'resources', label: 'Ressources', count: resources.length },
     { key: 'factories', label: 'Usines', count: factories.length },
     { key: 'skills', label: 'Skills', count: skills.length },
@@ -2114,24 +2102,24 @@ function AdminPage() {
 
   const title =
     activeTab === 'realms'
-      ? 'Balance · Royaumes'
+      ? 'Balance ï¿½ Royaumes'
       : activeTab === 'realm_unlock_costs'
-        ? 'Balance · Coûts royaumes'
+        ? 'Balance ï¿½ Coï¿½ts royaumes'
         : activeTab === 'resources'
-          ? 'Balance · Ressources'
+          ? 'Balance ï¿½ Ressources'
           : activeTab === 'factories'
-            ? 'Balance · Usines'
+            ? 'Balance ï¿½ Usines'
             : activeTab === 'skills'
-              ? 'Balance · Skills'
+              ? 'Balance ï¿½ Skills'
               : activeTab === 'players'
                 ? 'Joueurs'
                 : activeTab === 'support'
                   ? supportTab === 'tickets'
-                    ? 'Support · Tickets'
-                    : 'Audit · Logs admin'
+                    ? 'Support ï¿½ Tickets'
+                    : 'Audit ï¿½ Logs admin'
                   : endgameTab === 'requirements'
-                    ? 'Endgame · Règles'
-                    : 'Endgame · Classement';
+                    ? 'Endgame ï¿½ Rï¿½gles'
+                    : 'Endgame ï¿½ Classement';
 
   const inputClass =
     'w-full rounded-md bg-slate-950/60 border border-slate-700 px-2 py-1 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70';
@@ -2460,6 +2448,12 @@ function AdminPage() {
           <div className="border-t border-slate-800/70 pt-4">
             <AdminSectionTitle>{title}</AdminSectionTitle>
 
+            {dirtyInfo.rows > 0 ? (
+              <InfoBanner tone="warning">
+                Modifications non sauvegardees : {dirtyInfo.rows} ligne(s), {dirtyInfo.fields} champ(s).
+              </InfoBanner>
+            ) : null}
+
             <CreateBalanceForm
               open={createOpen && isBalanceTab}
               title={title}
@@ -2477,13 +2471,13 @@ function AdminPage() {
             />
 
             {activeTab === 'players' ? (
-              <PlayersPanel
+              <AdminPlayersSection
                 selectedPlayerId={selectedPlayerId}
                 listProps={playersListProps}
                 detailsProps={playersDetailsProps}
               />
             ) : activeTab === 'support' ? (
-              <SupportPanel
+              <AdminSupportSection
                 supportTab={supportTab}
                 onTabChange={(tab) => {
                   setSupportTab(tab);
@@ -2503,7 +2497,7 @@ function AdminPage() {
                 logsContent={supportLogsContent}
               />
             ) : activeTab === 'endgame' ? (
-              <EndgamePanel
+              <AdminEndgameSection
                 endgameTab={endgameTab}
                 onTabChange={setEndgameTab}
                 requirementsCount={endgameRequirements.length}
@@ -2514,6 +2508,7 @@ function AdminPage() {
                 createForm={endgameCreateForm}
                 requirementsContent={endgameRequirementsContent}
                 rankingsContent={endgameRankingsContent}
+                feedback={endgameFeedback}
               />
             ) : (
               <BalanceList

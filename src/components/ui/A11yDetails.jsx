@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 
 export default function A11yDetails({
   summary,
@@ -8,6 +8,7 @@ export default function A11yDetails({
   children,
 }) {
   const [open, setOpen] = useState(!!defaultOpen);
+  const contentId = useId();
 
   return (
     <details
@@ -17,12 +18,12 @@ export default function A11yDetails({
     >
       <summary
         aria-expanded={open}
+        aria-controls={contentId}
         className={`focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${summaryClassName}`}
       >
         {summary}
       </summary>
-      {children}
+      <div id={contentId}>{children}</div>
     </details>
   );
 }
-

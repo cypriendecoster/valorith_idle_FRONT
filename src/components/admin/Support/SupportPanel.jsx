@@ -46,7 +46,7 @@ export default function SupportPanel({
 
       </div>
 
-      <div className="border-t border-slate-800/70 pt-3">
+      <div className="border-t border-slate-800/70 pt-3 sticky top-0 z-10 bg-slate-950/85 backdrop-blur">
         <p className="text-[11px] uppercase tracking-widest text-slate-400 mb-2">
           {supportTab === 'tickets' ? 'Filtres tickets' : 'Filtres logs'}
         </p>

@@ -1,4 +1,5 @@
 import ActionMenu from '../../ui/ActionMenu';
+import A11yDetails from '../../ui/A11yDetails';
 import TableShell from '../../ui/TableShell';
 import SkeletonCards from '../../ui/SkeletonCards';
 import SkeletonTable from '../../ui/SkeletonTable';
@@ -21,6 +22,27 @@ export default function EndgameRequirementsList({
   const onUpdate = updateField || (() => {});
   const onSave = requestSave || (() => {});
   const onDelete = requestDelete || (() => {});
+  const findResourceLabel = (value) => {
+    if (value == null || value === '') return '-';
+    const id = Number(value);
+    const res = sortedResources.find((item) => Number(item.id) === id);
+    if (!res) return `#${value}`;
+    return `${res.code} - ${res.name} (#${res.id})`;
+  };
+  const getDiffs = (row, merged) => {
+    const diffs = [];
+    const beforeRes = row?.resource_id;
+    const afterRes = merged?.resource_id;
+    if (String(beforeRes ?? '') !== String(afterRes ?? '')) {
+      diffs.push(`Ressource: ${findResourceLabel(beforeRes)} -> ${findResourceLabel(afterRes)}`);
+    }
+    const beforeAmount = row?.amount;
+    const afterAmount = merged?.amount;
+    if (String(beforeAmount ?? '') !== String(afterAmount ?? '')) {
+      diffs.push(`Montant: ${beforeAmount ?? '-'} -> ${afterAmount ?? '-'}`);
+    }
+    return diffs;
+  };
 
   if (loading) {
     return (
@@ -47,6 +69,7 @@ export default function EndgameRequirementsList({
           const r = resolveRow(type, row);
           const busy = rowBusy(type, row.id);
           const canSave = rowDiffs(type, row).length > 0;
+          const diffs = canSave ? getDiffs(row, r) : [];
 
           return (
             <div
@@ -96,6 +119,18 @@ export default function EndgameRequirementsList({
                 >
                   {busy ? 'Sauvegarde...' : 'Sauvegarder'}
                 </button>
+                {diffs.length > 0 ? (
+                  <A11yDetails
+                    summary="Changements"
+                    summaryClassName="list-none [&::-webkit-details-marker]:hidden cursor-pointer text-[11px] text-slate-300 hover:text-slate-200"
+                  >
+                    <ul className="mt-2 text-[11px] text-slate-200 space-y-1">
+                      {diffs.map((diff) => (
+                        <li key={diff}>{diff}</li>
+                      ))}
+                    </ul>
+                  </A11yDetails>
+                ) : null}
                 <ActionMenu
                   ariaLabel="Actions"
                   items={[
@@ -129,6 +164,7 @@ export default function EndgameRequirementsList({
               const r = resolveRow(type, row);
               const busy = rowBusy(type, row.id);
               const canSave = rowDiffs(type, row).length > 0;
+              const diffs = canSave ? getDiffs(row, r) : [];
 
               return (
                 <tr key={`endgame-req-${row.id}`} className="border-b border-slate-800/60">
@@ -158,7 +194,7 @@ export default function EndgameRequirementsList({
                     />
                   </td>
                   <td className="py-2">
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 items-start">
                       <button
                         type="button"
                         disabled={busy || !canSave}
@@ -167,6 +203,18 @@ export default function EndgameRequirementsList({
                       >
                         {busy ? 'Sauvegarde...' : 'Sauvegarder'}
                       </button>
+                      {diffs.length > 0 ? (
+                        <A11yDetails
+                          summary="Changements"
+                          summaryClassName="list-none [&::-webkit-details-marker]:hidden cursor-pointer text-[11px] text-slate-300 hover:text-slate-200"
+                        >
+                          <ul className="mt-2 text-[11px] text-slate-200 space-y-1">
+                            {diffs.map((diff) => (
+                              <li key={diff}>{diff}</li>
+                            ))}
+                          </ul>
+                        </A11yDetails>
+                      ) : null}
                       <button
                         type="button"
                         onClick={() => onDelete(type, row)}

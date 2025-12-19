@@ -133,6 +133,23 @@ export default function LogsToolbar({
         >
           Reinitialiser filtres
         </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (setLogsSearch) setLogsSearch('');
+            if (setLogsActionType) setLogsActionType('');
+            if (setLogsTargetTable) setLogsTargetTable('');
+            if (setLogsUserId) setLogsUserId('');
+            if (setLogsSortDir) setLogsSortDir('DESC');
+            if (setLogsLimit) setLogsLimit(200);
+            if (setLogsPage) setLogsPage(0);
+            if (refreshAdminLogs) refreshAdminLogs();
+          }}
+          aria-label="Reinitialiser les filtres et rafraichir les logs"
+          className="px-3 py-2 rounded-lg border border-amber-500/50 text-amber-200 hover:bg-amber-500/10 transition-colors text-xs"
+        >
+          Reset + rafraichir
+        </button>
       </div>
     </div>
   );

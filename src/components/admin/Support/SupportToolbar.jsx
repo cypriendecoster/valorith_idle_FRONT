@@ -165,6 +165,22 @@ export default function SupportToolbar({
         >
           Reinitialiser filtres
         </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (setSupportStatus) setSupportStatus('OPEN');
+            if (setSupportCategory) setSupportCategory('');
+            if (setSupportSearch) setSupportSearch('');
+            if (setSupportSortDir) setSupportSortDir('DESC');
+            if (setSupportLimit) setSupportLimit(200);
+            if (setSupportPage) setSupportPage(0);
+            if (refreshSupportTickets) refreshSupportTickets();
+          }}
+          aria-label="Reinitialiser les filtres et rafraichir les tickets"
+          className="px-3 py-2 rounded-lg border border-amber-500/50 text-amber-200 hover:bg-amber-500/10 transition-colors text-xs"
+        >
+          Reset + rafraichir
+        </button>
       </div>
     </div>
   );

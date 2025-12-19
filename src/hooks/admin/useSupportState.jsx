@@ -5,6 +5,7 @@ import TicketsList from '../../components/admin/Support/TicketsList';
 import TicketDetail from '../../components/admin/Support/TicketDetail';
 import LogsToolbar from '../../components/admin/Support/LogsToolbar';
 import LogsList from '../../components/admin/Support/LogsList';
+import usePagedFilters from './usePagedFilters';
 
 export default function useSupportState({
   maintenanceLoading,
@@ -65,6 +66,9 @@ export default function useSupportState({
   handleTicketStatus,
   filteredLogs,
 }) {
+  const supportFilters = usePagedFilters({ setPage: setSupportPage });
+  const logsFilters = usePagedFilters({ setPage: setLogsPage });
+
   const supportMaintenance = useMemo(
     () => (
       <MaintenanceCard
@@ -94,31 +98,18 @@ export default function useSupportState({
     () => (
       <SupportToolbar
         supportStatus={supportStatus}
-        setSupportStatus={(value) => {
-          setSupportStatus(value);
-          setSupportPage(0);
-        }}
+        setSupportStatus={supportFilters.withPageReset(setSupportStatus)}
         supportCategory={supportCategory}
-        setSupportCategory={(value) => {
-          setSupportCategory(value);
-          setSupportPage(0);
-        }}
+        setSupportCategory={supportFilters.withPageReset(setSupportCategory)}
         supportCategoryOptions={supportCategoryOptions}
         supportSearch={supportSearch}
-        setSupportSearch={(value) => {
-          setSupportSearch(value);
-          setSupportPage(0);
-        }}
+        setSupportSearch={supportFilters.withPageReset(setSupportSearch)}
         supportSortDir={supportSortDir}
-        setSupportSortDir={(value) => {
-          setSupportSortDir(value);
-          setSupportPage(0);
-        }}
+        setSupportSortDir={supportFilters.withPageReset(setSupportSortDir)}
         supportLimit={supportLimit}
-        setSupportLimit={(value) => {
-          setSupportLimit(Number(value));
-          setSupportPage(0);
-        }}
+        setSupportLimit={supportFilters.withPageReset((value) =>
+          setSupportLimit(Number(value))
+        )}
         supportTicketsLoading={supportTicketsLoading}
         supportTicketsTotal={supportTicketsTotal}
         supportPage={supportPage}
@@ -144,6 +135,7 @@ export default function useSupportState({
       supportTo,
       setSupportPage,
       refreshSupportTickets,
+      supportFilters,
       setSupportStatus,
       setSupportCategory,
       setSupportSearch,
@@ -158,33 +150,23 @@ export default function useSupportState({
         logsSearch={logsSearch}
         setLogsSearch={setLogsSearch}
         logsActionType={logsActionType}
-        setLogsActionType={(value) => {
-          setLogsActionType(value);
-          setLogsPage(0);
-          setLogsPrefetched(false);
-        }}
+        setLogsActionType={logsFilters.withPageReset(setLogsActionType, {
+          after: () => setLogsPrefetched(false),
+        })}
         logsTargetTable={logsTargetTable}
-        setLogsTargetTable={(value) => {
-          setLogsTargetTable(value);
-          setLogsPage(0);
-          setLogsPrefetched(false);
-        }}
+        setLogsTargetTable={logsFilters.withPageReset(setLogsTargetTable, {
+          after: () => setLogsPrefetched(false),
+        })}
         logsUserId={logsUserId}
-        setLogsUserId={(value) => {
-          setLogsUserId(value);
-          setLogsPage(0);
-          setLogsPrefetched(false);
-        }}
+        setLogsUserId={logsFilters.withPageReset(setLogsUserId, {
+          after: () => setLogsPrefetched(false),
+        })}
         logsSortDir={logsSortDir}
-        setLogsSortDir={(value) => {
-          setLogsSortDir(value);
-          setLogsPage(0);
-        }}
+        setLogsSortDir={logsFilters.withPageReset(setLogsSortDir)}
         logsLimit={logsLimit}
-        setLogsLimit={(value) => {
-          setLogsLimit(Number(value));
-          setLogsPage(0);
-        }}
+        setLogsLimit={logsFilters.withPageReset((value) =>
+          setLogsLimit(Number(value))
+        )}
         logsLoading={logsLoading}
         logsTotal={logsTotal}
         logsPage={logsPage}
@@ -210,6 +192,7 @@ export default function useSupportState({
       logsTo,
       setLogsPage,
       refreshAdminLogs,
+      logsFilters,
       setLogsSearch,
       setLogsActionType,
       setLogsTargetTable,
