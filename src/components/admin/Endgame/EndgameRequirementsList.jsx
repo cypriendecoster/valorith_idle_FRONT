@@ -50,7 +50,7 @@ export default function EndgameRequirementsList({
 
   if (loading) {
     return (
-      <div className="space-y-3" aria-busy="true">
+      <div className="space-y-3" aria-busy="true" role="status" aria-live="polite">
         <div className="md:hidden">
           <SkeletonCards items={6} />
         </div>
@@ -62,7 +62,11 @@ export default function EndgameRequirementsList({
   }
 
   if (!requirements || requirements.length === 0) {
-    return <p className="text-sm text-slate-300">Aucun resultat.</p>;
+    return (
+      <p className="text-sm text-slate-300" role="status" aria-live="polite">
+        Aucun resultat.
+      </p>
+    );
   }
 
   const dirtyRows = useMemo(
@@ -134,12 +138,13 @@ export default function EndgameRequirementsList({
       </div>
 
       <div className="md:hidden space-y-2">
-        {requirements.map((row) => {
-          const type = 'endgame_requirements';
-          const r = resolveRow(type, row);
-          const busy = rowBusy(type, row.id);
-          const canSave = rowDiffs(type, row).length > 0;
-          const diffs = canSave ? getDiffs(row, r) : [];
+          {requirements.map((row) => {
+            const type = 'endgame_requirements';
+            const r = resolveRow(type, row);
+            const busy = rowBusy(type, row.id);
+            const canSave = rowDiffs(type, row).length > 0;
+            const diffs = canSave ? getDiffs(row, r) : [];
+            const dangerHelpId = `endgame-danger-${row.id}`;
 
           return (
             <div
@@ -285,9 +290,13 @@ export default function EndgameRequirementsList({
                           </ul>
                         </A11yDetails>
                       ) : null}
+                      <span id={dangerHelpId} className="sr-only">
+                        Action dangereuse. Cette operation est irreversible.
+                      </span>
                       <button
                         type="button"
                         onClick={() => onDelete(type, row)}
+                        aria-describedby={dangerHelpId}
                         className="px-3 py-1 rounded-md border border-red-500/50 text-red-200 hover:bg-red-900/30 transition-colors"
                       >
                         Supprimer

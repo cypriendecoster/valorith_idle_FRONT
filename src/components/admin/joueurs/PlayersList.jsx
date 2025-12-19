@@ -164,7 +164,7 @@ export default function PlayersList({
       </div>
 
       {playersLoading ? (
-        <div className="space-y-3" aria-busy="true">
+        <div className="space-y-3" aria-busy="true" role="status" aria-live="polite">
           <div className="md:hidden">
             <SkeletonCards items={6} />
           </div>
@@ -173,7 +173,9 @@ export default function PlayersList({
           </div>
         </div>
       ) : filteredPlayers.length === 0 ? (
-        <p className="text-sm text-slate-300">Aucun joueur.</p>
+        <p className="text-sm text-slate-300" role="status" aria-live="polite">
+          Aucun joueur.
+        </p>
       ) : (
         <>
           <div className="md:hidden space-y-2">

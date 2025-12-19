@@ -15,6 +15,7 @@ export default function PlayerActionsFactories({
         <p className="text-[11px] uppercase tracking-widest text-slate-400">Usine</p>
         <select
           className={inputClass}
+          aria-label="Usine"
           value={playerFactoryId}
           onChange={(e) => {
             const nextId = e.target.value;
@@ -43,6 +44,7 @@ export default function PlayerActionsFactories({
         <input
           className={inputClass}
           inputMode="numeric"
+          aria-label="Niveau usine"
           placeholder={
             playerFactoryId
               ? `Niveau (actuel: ${

@@ -8,7 +8,7 @@ export default function LogsList({
 }) {
   if (logsLoading) {
     return (
-      <div className="space-y-3" aria-busy="true">
+      <div className="space-y-3" aria-busy="true" role="status" aria-live="polite">
         <div className="md:hidden">
           <SkeletonCards items={6} />
         </div>
@@ -21,7 +21,11 @@ export default function LogsList({
 
   if (!filteredLogs || filteredLogs.length === 0) {
     return (
-      <div className="rounded-lg border border-slate-800/70 bg-slate-950/30 p-3">
+      <div
+        className="rounded-lg border border-slate-800/70 bg-slate-950/30 p-3"
+        role="status"
+        aria-live="polite"
+      >
         <p className="text-sm text-slate-300">Aucun resultat.</p>
       </div>
     );

@@ -91,6 +91,7 @@ export default function CreateBalanceForm({
             <input
               className={inputClass}
               placeholder="Code"
+              aria-label="Code"
               value={createDraft.code ?? ''}
               onChange={(e) => setCreateDraft((p) => ({ ...p, code: e.target.value }))}
             />
@@ -100,6 +101,7 @@ export default function CreateBalanceForm({
             <input
               className={inputClass}
               placeholder="Nom"
+              aria-label="Nom"
               value={createDraft.name ?? ''}
               onChange={(e) => setCreateDraft((p) => ({ ...p, name: e.target.value }))}
             />
@@ -111,6 +113,7 @@ export default function CreateBalanceForm({
             <input
               className={inputClass}
               placeholder="Description"
+              aria-label="Description"
               value={createDraft.description ?? ''}
               onChange={(e) =>
                 setCreateDraft((p) => ({
@@ -143,6 +146,7 @@ export default function CreateBalanceForm({
             <p className="text-[11px] uppercase tracking-widest text-slate-400">Royaume</p>
             <select
               className={inputClass}
+              aria-label="Royaume"
               value={createDraft.target_realm_id ?? ''}
               onChange={(e) =>
                 setCreateDraft((p) => ({
@@ -164,6 +168,7 @@ export default function CreateBalanceForm({
             <p className="text-[11px] uppercase tracking-widest text-slate-400">Ressource</p>
             <select
               className={inputClass}
+              aria-label="Ressource"
               value={createDraft.resource_id ?? ''}
               onChange={(e) =>
                 setCreateDraft((p) => ({
@@ -186,6 +191,7 @@ export default function CreateBalanceForm({
             <input
               className={inputClass}
               placeholder="Montant"
+              aria-label="Montant"
               inputMode="decimal"
               value={createDraft.amount ?? ''}
               onChange={(e) =>
@@ -208,6 +214,7 @@ export default function CreateBalanceForm({
             <input
               className={inputClass}
               placeholder="Realm ID (optionnel)"
+              aria-label="Realm ID (optionnel)"
               inputMode="numeric"
               value={createDraft.realm_id ?? ''}
               onChange={(e) =>
@@ -220,6 +227,7 @@ export default function CreateBalanceForm({
             <input
               className={inputClass}
               placeholder="Code"
+              aria-label="Code"
               value={createDraft.code ?? ''}
               onChange={(e) => setCreateDraft((p) => ({ ...p, code: e.target.value }))}
             />
@@ -229,6 +237,7 @@ export default function CreateBalanceForm({
             <input
               className={inputClass}
               placeholder="Nom"
+              aria-label="Nom"
               value={createDraft.name ?? ''}
               onChange={(e) => setCreateDraft((p) => ({ ...p, name: e.target.value }))}
             />
@@ -240,6 +249,7 @@ export default function CreateBalanceForm({
             <input
               className={inputClass}
               placeholder="Description"
+              aria-label="Description"
               value={createDraft.description ?? ''}
               onChange={(e) =>
                 setCreateDraft((p) => ({
@@ -258,6 +268,7 @@ export default function CreateBalanceForm({
             <p className="text-[11px] uppercase tracking-widest text-slate-400">Royaume</p>
             <select
               className={inputClass}
+              aria-label="Royaume"
               value={createDraft.realm_id ?? ''}
               onChange={(e) =>
                 setCreateDraft((p) => ({ ...p, realm_id: e.target.value }))
@@ -277,6 +288,7 @@ export default function CreateBalanceForm({
             </p>
             <select
               className={inputClass}
+              aria-label="Ressource"
               value={createDraft.resource_id ?? ''}
               onChange={(e) =>
                 setCreateDraft((p) => ({ ...p, resource_id: e.target.value }))
@@ -295,6 +307,7 @@ export default function CreateBalanceForm({
             <input
               className={inputClass}
               placeholder="Code"
+              aria-label="Code"
               value={createDraft.code ?? ''}
               onChange={(e) => setCreateDraft((p) => ({ ...p, code: e.target.value }))}
             />
@@ -304,6 +317,7 @@ export default function CreateBalanceForm({
             <input
               className={inputClass}
               placeholder="Nom"
+              aria-label="Nom"
               value={createDraft.name ?? ''}
               onChange={(e) => setCreateDraft((p) => ({ ...p, name: e.target.value }))}
             />
@@ -315,6 +329,7 @@ export default function CreateBalanceForm({
             <input
               className={inputClass}
               placeholder="Description"
+              aria-label="Description"
               value={createDraft.description ?? ''}
               onChange={(e) =>
                 setCreateDraft((p) => ({
@@ -331,6 +346,7 @@ export default function CreateBalanceForm({
             <input
               className={inputClass}
               placeholder="Base prod"
+              aria-label="Base prod"
               inputMode="decimal"
               value={createDraft.base_production ?? ''}
               onChange={(e) =>
@@ -348,6 +364,7 @@ export default function CreateBalanceForm({
             <input
               className={inputClass}
               placeholder="Base cost"
+              aria-label="Base cost"
               inputMode="decimal"
               value={createDraft.base_cost ?? ''}
               onChange={(e) =>
@@ -363,6 +380,7 @@ export default function CreateBalanceForm({
             <input
               className={inputClass}
               placeholder="Order"
+              aria-label="Order"
               inputMode="numeric"
               value={createDraft.unlock_order ?? ''}
               onChange={(e) =>
@@ -396,6 +414,7 @@ export default function CreateBalanceForm({
             <p className="text-[11px] uppercase tracking-widest text-slate-400">Royaume</p>
             <select
               className={inputClass}
+              aria-label="Royaume"
               value={createDraft.realm_id ?? ''}
               onChange={(e) =>
                 setCreateDraft((p) => ({ ...p, realm_id: e.target.value }))
@@ -414,6 +433,7 @@ export default function CreateBalanceForm({
             <input
               className={inputClass}
               placeholder="Code"
+              aria-label="Code"
               value={createDraft.code ?? ''}
               onChange={(e) => setCreateDraft((p) => ({ ...p, code: e.target.value }))}
             />
@@ -423,6 +443,7 @@ export default function CreateBalanceForm({
             <input
               className={inputClass}
               placeholder="Nom"
+              aria-label="Nom"
               value={createDraft.name ?? ''}
               onChange={(e) => setCreateDraft((p) => ({ ...p, name: e.target.value }))}
             />
@@ -434,6 +455,7 @@ export default function CreateBalanceForm({
             <input
               className={inputClass}
               placeholder="Description"
+              aria-label="Description"
               value={createDraft.description ?? ''}
               onChange={(e) =>
                 setCreateDraft((p) => ({
@@ -448,6 +470,7 @@ export default function CreateBalanceForm({
             <input
               className={inputClass}
               placeholder="Type"
+              aria-label="Type"
               value={createDraft.effect_type ?? ''}
               onChange={(e) =>
                 setCreateDraft((p) => ({
@@ -462,6 +485,7 @@ export default function CreateBalanceForm({
             <input
               className={inputClass}
               placeholder="Value"
+              aria-label="Value"
               inputMode="decimal"
               value={createDraft.effect_value ?? ''}
               onChange={(e) =>
@@ -477,6 +501,7 @@ export default function CreateBalanceForm({
             <input
               className={inputClass}
               placeholder="Max"
+              aria-label="Max"
               inputMode="numeric"
               value={createDraft.max_level ?? ''}
               onChange={(e) =>
@@ -490,6 +515,7 @@ export default function CreateBalanceForm({
             </p>
             <select
               className={inputClass}
+              aria-label="Ressource de cout"
               value={createDraft.base_cost_resource_id ?? ''}
               onChange={(e) =>
                 setCreateDraft((p) => ({
@@ -513,6 +539,7 @@ export default function CreateBalanceForm({
             <input
               className={inputClass}
               placeholder="Base cost"
+              aria-label="Base cost"
               inputMode="decimal"
               value={createDraft.base_cost_amount ?? ''}
               onChange={(e) =>
@@ -530,6 +557,7 @@ export default function CreateBalanceForm({
             <input
               className={inputClass}
               placeholder="Growth"
+              aria-label="Growth"
               inputMode="decimal"
               value={createDraft.cost_growth_factor ?? ''}
               onChange={(e) =>
@@ -545,6 +573,7 @@ export default function CreateBalanceForm({
             <input
               className={inputClass}
               placeholder="Order"
+              aria-label="Order"
               inputMode="numeric"
               value={createDraft.unlock_order ?? ''}
               onChange={(e) =>

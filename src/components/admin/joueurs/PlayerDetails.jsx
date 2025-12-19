@@ -130,6 +130,7 @@ export default function PlayerDetails({
                 className={inputClass}
                 inputMode="decimal"
                 placeholder="Montant (ex: 1000)"
+                aria-label="Montant ressource"
                 value={playerResourceAmount}
                 onChange={(e) => setPlayerResourceAmount(e.target.value)}
               />

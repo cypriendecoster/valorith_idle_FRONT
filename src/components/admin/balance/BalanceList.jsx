@@ -262,7 +262,7 @@ export default function BalanceList({
 
   if (loading) {
     return (
-      <div className="space-y-3" aria-busy="true">
+      <div className="space-y-3" aria-busy="true" role="status" aria-live="polite">
         <div className="md:hidden">
           <SkeletonCards items={6} />
         </div>
@@ -278,7 +278,11 @@ export default function BalanceList({
   }
 
   if (!visibleRows || visibleRows.length === 0) {
-    return <p className="text-sm text-slate-300">Aucun resultat.</p>;
+    return (
+      <p className="text-sm text-slate-300" role="status" aria-live="polite">
+        Aucun resultat.
+      </p>
+    );
   }
 
   return (

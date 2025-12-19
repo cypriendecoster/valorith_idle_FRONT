@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import TableShell from '../../ui/TableShell';
 import UnlockCostsEditor from './UnlockCostsEditor';
 
@@ -157,6 +158,7 @@ export default function BalanceRowTable({
             const r = resolveRow(type, row);
             const busy = rowBusy(type, row.id);
             const canSave = rowDiffs(type, row).length > 0;
+            const dangerHelpId = `balance-danger-${type}-${row.id}`;
 
             const saveButton = (
               <button
@@ -172,9 +174,13 @@ export default function BalanceRowTable({
             const actionButtons = (
               <div className="flex flex-wrap gap-2">
                 {saveButton}
+                <span id={dangerHelpId} className="sr-only">
+                  Action dangereuse. Cette operation est irreversible.
+                </span>
                 <button
                   type="button"
                   onClick={() => onDelete(type, row)}
+                  aria-describedby={dangerHelpId}
                   className="px-3 py-1 rounded-md border border-red-500/50 text-red-200 hover:bg-red-900/30 transition-colors"
                 >
                   Supprimer

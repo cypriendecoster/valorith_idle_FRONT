@@ -32,6 +32,7 @@ export default function EndgameCreateRequirementForm({
           <p className="text-[11px] uppercase tracking-widest text-slate-400">Ressource</p>
           <select
             className={inputClass}
+            aria-label="Ressource"
             value={createDraft.resource_id ?? ''}
             onChange={(e) =>
               setCreateDraft((p) => ({
@@ -53,6 +54,7 @@ export default function EndgameCreateRequirementForm({
           <input
             className={inputClass}
             placeholder="Montant"
+            aria-label="Montant"
             inputMode="decimal"
             value={createDraft.amount ?? ''}
             onChange={(e) =>

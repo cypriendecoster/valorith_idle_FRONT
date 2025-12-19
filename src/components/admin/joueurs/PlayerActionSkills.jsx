@@ -17,6 +17,7 @@ export default function PlayerActionSkills({
         </p>
         <select
           className={inputClass}
+          aria-label="Competence"
           value={playerSkillId}
           onChange={(e) => {
             const nextId = e.target.value;
@@ -45,6 +46,7 @@ export default function PlayerActionSkills({
         <input
           className={inputClass}
           inputMode="numeric"
+          aria-label="Niveau competence"
           placeholder={
             playerSkillId
               ? `Niveau (actuel: ${
