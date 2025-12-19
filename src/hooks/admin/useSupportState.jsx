@@ -59,6 +59,10 @@ export default function useSupportState({
   supportTickets,
   selectedTicketId,
   setSelectedTicketId,
+  selectedTicketIds,
+  setSelectedTicketIds,
+  onCloseSelected,
+  supportBulkClosing,
   selectedTicket,
   normalizeText,
   copyWithToast,
@@ -68,6 +72,41 @@ export default function useSupportState({
 }) {
   const supportFilters = usePagedFilters({ setPage: setSupportPage });
   const logsFilters = usePagedFilters({ setPage: setLogsPage });
+  const exportTicketsDisabled = !supportTickets || supportTickets.length === 0;
+  const exportLogsDisabled = !filteredLogs || filteredLogs.length === 0;
+
+  const downloadFile = (filename, content, type) => {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const formatExportDate = () => new Date().toISOString().slice(0, 10);
+
+  const toCsv = (rows) => {
+    const list = Array.isArray(rows) ? rows : [];
+    if (list.length === 0) return '';
+    const keys = Array.from(
+      new Set(list.flatMap((row) => Object.keys(row ?? {})))
+    );
+    const escapeCell = (value) => {
+      if (value == null) return '';
+      const raw = typeof value === 'object' ? JSON.stringify(value) : String(value);
+      const escaped = raw.replace(/\"/g, '\"\"');
+      return `\"${escaped}\"`;
+    };
+    const header = keys.map(escapeCell).join(',');
+    const lines = list.map((row) =>
+      keys.map((key) => escapeCell(row?.[key])).join(',')
+    );
+    return [header, ...lines].join('\n');
+  };
 
   const supportMaintenance = useMemo(
     () => (
@@ -118,6 +157,28 @@ export default function useSupportState({
         supportTo={supportTo}
         setSupportPage={setSupportPage}
         refreshSupportTickets={refreshSupportTickets}
+        onExportJson={() =>
+          downloadFile(
+            `support_tickets_${formatExportDate()}.json`,
+            JSON.stringify(supportTickets ?? [], null, 2),
+            'application/json'
+          )
+        }
+        onExportCsv={() =>
+          downloadFile(
+            `support_tickets_${formatExportDate()}.csv`,
+            toCsv(supportTickets ?? []),
+            'text/csv;charset=utf-8'
+          )
+        }
+        exportDisabled={exportTicketsDisabled}
+        selectedCount={selectedTicketIds.length}
+        onCloseSelected={onCloseSelected}
+        closeDisabled={
+          supportBulkClosing ||
+          supportTicketsLoading ||
+          selectedTicketIds.length === 0
+        }
       />
     ),
     [
@@ -141,6 +202,11 @@ export default function useSupportState({
       setSupportSearch,
       setSupportSortDir,
       setSupportLimit,
+      supportTickets,
+      exportTicketsDisabled,
+      selectedTicketIds,
+      onCloseSelected,
+      supportBulkClosing,
     ]
   );
 
@@ -175,6 +241,21 @@ export default function useSupportState({
         logsTo={logsTo}
         setLogsPage={setLogsPage}
         refreshAdminLogs={refreshAdminLogs}
+        onExportJson={() =>
+          downloadFile(
+            `admin_logs_${formatExportDate()}.json`,
+            JSON.stringify(filteredLogs ?? [], null, 2),
+            'application/json'
+          )
+        }
+        onExportCsv={() =>
+          downloadFile(
+            `admin_logs_${formatExportDate()}.csv`,
+            toCsv(filteredLogs ?? []),
+            'text/csv;charset=utf-8'
+          )
+        }
+        exportDisabled={exportLogsDisabled}
       />
     ),
     [
@@ -200,8 +281,24 @@ export default function useSupportState({
       setLogsSortDir,
       setLogsLimit,
       setLogsPrefetched,
+      filteredLogs,
+      exportLogsDisabled,
     ]
   );
+
+  const toggleTicket = (ticket) => {
+    if (!ticket) return;
+    if (!setSelectedTicketIds) return;
+    setSelectedTicketIds((prev) => {
+      const list = Array.isArray(prev) ? prev : [];
+      const ticketId = ticket.id;
+      const exists = list.some((id) => Number(id) === Number(ticketId));
+      if (exists) {
+        return list.filter((id) => Number(id) !== Number(ticketId));
+      }
+      return [...list, ticketId];
+    });
+  };
 
   const supportTicketsContent = useMemo(
     () => (
@@ -215,7 +312,9 @@ export default function useSupportState({
             supportTickets={supportTickets}
             supportTicketsLoading={supportTicketsLoading}
             selectedTicketId={selectedTicketId}
+            selectedTicketIds={selectedTicketIds}
             onSelectTicket={(ticket) => setSelectedTicketId(ticket.id)}
+            onToggleTicket={toggleTicket}
           />
         </div>
         <div
@@ -239,12 +338,14 @@ export default function useSupportState({
       supportTickets,
       supportTicketsLoading,
       selectedTicketId,
+      selectedTicketIds,
       selectedTicket,
       normalizeText,
       copyWithToast,
       setToast,
       handleTicketStatus,
       setSelectedTicketId,
+      setSelectedTicketIds,
     ]
   );
 

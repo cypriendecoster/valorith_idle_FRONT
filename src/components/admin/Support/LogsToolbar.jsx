@@ -22,6 +22,9 @@ export default function LogsToolbar({
   logsTo = 0,
   setLogsPage,
   refreshAdminLogs,
+  onExportJson,
+  onExportCsv,
+  exportDisabled = false,
 }) {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -149,6 +152,24 @@ export default function LogsToolbar({
           className="px-3 py-2 rounded-lg border border-amber-500/50 text-amber-200 hover:bg-amber-500/10 transition-colors text-xs"
         >
           Reset + rafraichir
+        </button>
+        <button
+          type="button"
+          onClick={() => onExportJson && onExportJson()}
+          disabled={exportDisabled}
+          aria-label="Exporter les logs en JSON"
+          className="px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+        >
+          Exporter JSON
+        </button>
+        <button
+          type="button"
+          onClick={() => onExportCsv && onExportCsv()}
+          disabled={exportDisabled}
+          aria-label="Exporter les logs en CSV"
+          className="px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+        >
+          Exporter CSV
         </button>
       </div>
     </div>

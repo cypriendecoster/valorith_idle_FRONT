@@ -7,7 +7,9 @@ export default function TicketsList({
   supportTickets = [],
   supportTicketsLoading = false,
   selectedTicketId,
+  selectedTicketIds = [],
   onSelectTicket,
+  onToggleTicket,
 }) {
   if (supportTicketsLoading) {
     return (
@@ -33,12 +35,18 @@ export default function TicketsList({
   const selectTicket = (ticket) => {
     if (onSelectTicket) onSelectTicket(ticket);
   };
+  const toggleTicket = (ticket) => {
+    if (onToggleTicket) onToggleTicket(ticket);
+  };
+  const isSelected = (ticket) =>
+    selectedTicketIds.some((id) => Number(id) === Number(ticket.id));
 
   return (
     <>
       <div className="md:hidden space-y-2">
         {supportTickets.map((ticket) => {
           const selected = Number(selectedTicketId) === Number(ticket.id);
+          const multiSelected = isSelected(ticket);
           return (
             <button
               key={`ticket-card-${ticket.id}`}
@@ -51,7 +59,20 @@ export default function TicketsList({
               } focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70`}
             >
               <div className="flex items-start justify-between gap-3">
-                <p className="text-[11px] text-amber-300 font-mono">#{ticket.id}</p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={multiSelected}
+                    aria-label={`Selectionner le ticket #${ticket.id}`}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      toggleTicket(ticket);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="accent-amber-400"
+                  />
+                  <p className="text-[11px] text-amber-300 font-mono">#{ticket.id}</p>
+                </div>
                 <p className="text-[11px] text-slate-300">
                   {ticket.created_at
                     ? new Date(ticket.created_at).toLocaleString('fr-FR')
@@ -83,6 +104,7 @@ export default function TicketsList({
         <table className="w-full text-left text-xs">
           <thead className="text-[11px] uppercase tracking-widest text-slate-400">
             <tr className="border-b border-slate-800/70">
+              <th className="py-2 pr-3">Sel</th>
               <th className="py-2 pr-3">ID</th>
               <th className="py-2 pr-3">Status</th>
               <th className="py-2 pr-3">User</th>
@@ -93,6 +115,7 @@ export default function TicketsList({
           <tbody>
             {supportTickets.map((ticket) => {
               const selected = Number(selectedTicketId) === Number(ticket.id);
+              const multiSelected = isSelected(ticket);
               return (
                 <tr
                   key={`ticket-${ticket.id}`}
@@ -111,6 +134,19 @@ export default function TicketsList({
                     }
                   }}
                 >
+                  <td className="py-2 pr-3">
+                    <input
+                      type="checkbox"
+                      checked={multiSelected}
+                      aria-label={`Selectionner le ticket #${ticket.id}`}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        toggleTicket(ticket);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="accent-amber-400"
+                    />
+                  </td>
                   <td className="py-2 pr-3 font-mono text-amber-300">{ticket.id}</td>
                   <td className="py-2 pr-3 text-slate-200">
                     <StatusBadge status={ticket.status} />

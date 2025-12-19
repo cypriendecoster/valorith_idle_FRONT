@@ -85,6 +85,8 @@ function AdminPage() {
   const [supportTicketsTotal, setSupportTicketsTotal] = useState(0);
   const [supportTicketsLoading, setSupportTicketsLoading] = useState(false);
   const [selectedTicketId, setSelectedTicketId] = useState(null);
+  const [selectedTicketIds, setSelectedTicketIds] = useState([]);
+  const [supportBulkClosing, setSupportBulkClosing] = useState(false);
   const [supportPage, setSupportPage] = useState(0);
   const [supportLimit, setSupportLimit] = useState(200);
   const [supportSortDir, setSupportSortDir] = useState('DESC');
@@ -829,6 +831,7 @@ function AdminPage() {
     }
     if (activeTab !== 'support') {
       setSelectedTicketId(null);
+      setSelectedTicketIds([]);
     }
   }, [activeTab]);
 
@@ -1965,6 +1968,34 @@ function AdminPage() {
     }
   };
 
+  const handleCloseSelectedTickets = async () => {
+    if (!selectedTicketIds.length) return;
+    setSupportBulkClosing(true);
+    try {
+      await Promise.all(
+        selectedTicketIds.map((id) =>
+          adminService.updateSupportTicketStatus(id, 'CLOSED')
+        )
+      );
+      setToast({
+        type: 'success',
+        message: ${selectedTicketIds.length} ticket(s) cloture(s).,
+      });
+      setSelectedTicketIds([]);
+      await refreshSupportTickets();
+    } catch (err) {
+      console.error(err);
+      setToast({
+        type: 'error',
+        message:
+          err?.response?.data?.message ||
+          'Impossible de clore la selection.',
+      });
+    } finally {
+      setSupportBulkClosing(false);
+    }
+  };
+
   const refreshAdminLogs = async () => {
     try {
       setLogsLoading(true);
@@ -2333,6 +2364,10 @@ function AdminPage() {
     supportTickets,
     selectedTicketId,
     setSelectedTicketId,
+    selectedTicketIds,
+    setSelectedTicketIds,
+    onCloseSelected: handleCloseSelectedTickets,
+    supportBulkClosing,
     selectedTicket,
     normalizeText,
     copyWithToast,
@@ -2482,6 +2517,7 @@ function AdminPage() {
                 onTabChange={(tab) => {
                   setSupportTab(tab);
                   setSelectedTicketId(null);
+                  setSelectedTicketIds([]);
                   if (tab === 'tickets') {
                     setSupportPage(0);
                   } else {

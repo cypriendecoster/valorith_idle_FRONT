@@ -21,6 +21,12 @@ export default function SupportToolbar({
   supportTo = 0,
   setSupportPage,
   refreshSupportTickets,
+  onExportJson,
+  onExportCsv,
+  exportDisabled = false,
+  selectedCount = 0,
+  onCloseSelected,
+  closeDisabled = false,
 }) {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -180,6 +186,33 @@ export default function SupportToolbar({
           className="px-3 py-2 rounded-lg border border-amber-500/50 text-amber-200 hover:bg-amber-500/10 transition-colors text-xs"
         >
           Reset + rafraichir
+        </button>
+        <button
+          type="button"
+          onClick={() => onExportJson && onExportJson()}
+          disabled={exportDisabled}
+          aria-label="Exporter les tickets en JSON"
+          className="px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+        >
+          Exporter JSON
+        </button>
+        <button
+          type="button"
+          onClick={() => onExportCsv && onExportCsv()}
+          disabled={exportDisabled}
+          aria-label="Exporter les tickets en CSV"
+          className="px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+        >
+          Exporter CSV
+        </button>
+        <button
+          type="button"
+          onClick={() => onCloseSelected && onCloseSelected()}
+          disabled={closeDisabled || selectedCount === 0}
+          aria-label="Clore les tickets selectionnes"
+          className="px-3 py-2 rounded-lg border border-red-500/50 text-red-200 hover:bg-red-900/30 disabled:opacity-60 disabled:cursor-not-allowed transition-colors text-xs"
+        >
+          Clore selection {selectedCount > 0 ? `(${selectedCount})` : ''}
         </button>
       </div>
     </div>
