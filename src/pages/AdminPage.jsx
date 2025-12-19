@@ -1345,6 +1345,36 @@ function AdminPage() {
     });
   };
 
+    const requestBatchSave = (type, rows, diffs) => {
+    const dirtyRows = (rows || []).filter((row) => getRowDiffs(type, row).length > 0);
+    if (dirtyRows.length === 0) {
+      setToast({ type: 'success', message: 'Aucune modification a sauvegarder.' });
+      return;
+    }
+
+    const details = Array.isArray(diffs) && diffs.length > 0
+      ? diffs
+      : dirtyRows.flatMap((row) =>
+          getRowDiffs(type, row).map((diff) => ({
+            ...diff,
+            field: `#${row.id} ${diff.field}`,
+          }))
+        );
+
+    openConfirm({
+      title: 'Confirmer la sauvegarde (batch)',
+      message: `Sauvegarder ${dirtyRows.length} ligne(s) ?`,
+      confirmLabel: 'Sauvegarder',
+      danger: false,
+      details,
+      action: async () => {
+        for (const row of dirtyRows) {
+          await handleSave(type, row);
+        }
+      },
+    });
+  };
+
   const openCreate = () => {
     setCreateOpen(true);
     setCreateDraft(() => {
