@@ -26,6 +26,10 @@ import TicketsList from '../components/admin/Support/TicketsList';
 import TicketDetail from '../components/admin/Support/TicketDetail';
 import LogsToolbar from '../components/admin/Support/LogsToolbar';
 import LogsList from '../components/admin/Support/LogsList';
+import EndgamePanel from '../components/admin/Endgame/EndgamePanel';
+import EndgameCreateRequirementForm from '../components/admin/Endgame/EndgameCreateRequirementForm';
+import EndgameRequirementsList from '../components/admin/Endgame/EndgameRequirementsList';
+import EndgameRankingsTable from '../components/admin/Endgame/EndgameRankingsTable';
 import AdminToolbar from '../components/admin/layout/AdminToolbar';
 import AdminSectionTitle from '../components/admin/layout/AdminSectionTitle';
 import { adminService } from '../services/AdminService';
@@ -2642,425 +2646,48 @@ function AdminPage() {
                 }
               />
             ) : activeTab === 'endgame' ? (
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setEndgameTab('requirements')}
-                      className={`px-3 py-1 rounded-md border text-xs transition-colors ${endgameTab === 'requirements'
-                        ? 'border-amber-400 text-amber-200 bg-amber-500/10'
-                        : 'border-slate-700 text-slate-200 hover:border-amber-400 hover:text-amber-200'
-                        }`}
-                    >
-                      Règles{' '}
-                      <span className="text-[11px] text-slate-400">
-                        ({endgameRequirements.length})
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setEndgameTab('rankings')}
-                      className={`px-3 py-1 rounded-md border text-xs transition-colors ${endgameTab === 'rankings'
-                        ? 'border-amber-400 text-amber-200 bg-amber-500/10'
-                        : 'border-slate-700 text-slate-200 hover:border-amber-400 hover:text-amber-200'
-                        }`}
-                    >
-                      Classement{' '}
-                      <span className="text-[11px] text-slate-400">
-                        ({endgameRankings.length})
-                      </span>
-                    </button>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {endgameTab === 'requirements' && (
-                      <button
-                        type="button"
-                        onClick={openEndgameCreate}
-                        className="px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-xs text-slate-900 font-semibold transition-colors"
-                      >
-                        Créer une règle
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={refreshEndgame}
-                      disabled={endgameLoading}
-                      className="px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {endgameLoading ? '...' : 'Rafraîchir'}
-                    </button>
-                  </div>
-                </div>
-
-                {endgameTab === 'requirements' && createOpen && (
-                  <div className="rounded-xl border border-amber-500/30 bg-slate-950/40 p-3 space-y-3">
-                    <p className="text-xs text-slate-300">
-                      Création d'une règle endgame
-                    </p>
-                    <div className="grid gap-2 md:grid-cols-6">
-                      <select
-                        className={`${inputClass} md:col-span-3`}
-                        value={createDraft.resource_id ?? ''}
-                        onChange={(e) =>
-                          setCreateDraft((p) => ({
-                            ...p,
-                            resource_id: e.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">Ressource</option>
-                        {sortedResources.map((res) => (
-                          <option key={`endgame-create-res-${res.id}`} value={res.id}>
-                            {res.code} - {res.name} (#{res.id})
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        className={`${inputClass} md:col-span-2`}
-                        placeholder="Montant"
-                        inputMode="decimal"
-                        value={createDraft.amount ?? ''}
-                        onChange={(e) =>
-                          setCreateDraft((p) => ({ ...p, amount: e.target.value }))
-                        }
-                      />
-                      <div className="flex gap-2 justify-end md:col-span-1">
-                        <button
-                          type="button"
-                          onClick={() => setCreateOpen(false)}
-                          className="px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
-                        >
-                          Annuler
-                        </button>
-                        <button
-                          type="button"
-                          disabled={createSaving}
-                          onClick={handleCreateEndgameRequirement}
-                          className="px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed text-xs text-slate-900 font-semibold transition-colors"
-                        >
-                          {createSaving ? 'Création…' : 'Créer'}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {endgameLoading ? (
-                  <div className="space-y-3" aria-busy="true">
-                    <div className="md:hidden">
-                      <SkeletonCards items={6} />
-                    </div>
-                    <div className="hidden md:block">
-                      <SkeletonTable rows={8} cols={5} titleWidth="w-32" />
-                    </div>
-                  </div>
-                ) : endgameTab === 'requirements' ? (
-                  (endgameRequirements || []).filter(matchesSearch).length === 0 ? (
-                    <p className="text-sm text-slate-300">Aucun résultat.</p>
-                  ) : (
-                    <>
-                      <div className="md:hidden space-y-2">
-                        {(endgameRequirements || []
-                          .filter(matchesSearch)
-                          .map((row) => {
-                            const type = 'endgame_requirements';
-                            const r = mergedRow(type, row);
-                            const busy = isRowSaving(type, row.id);
-                            const canSave = getRowDiffs(type, row).length > 0;
-
-                            return (
-                              <div
-                                key={`endgame-req-card-${row.id}`}
-                                className="rounded-lg border border-slate-800/70 bg-slate-950/30 p-3 space-y-2"
-                              >
-                                <div className="flex items-center justify-between gap-3">
-                                  <p className="text-[11px] text-amber-300 font-mono">
-                                    #{row.id}
-                                  </p>
-                                </div>
-
-                                <div>
-                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                    Ressource
-                                  </p>
-                                  <select
-                                    className={inputClass}
-                                    value={r.resource_id ?? ''}
-                                    onChange={(e) =>
-                                      updateField(type, row.id, 'resource_id', e.target.value)
-                                    }
-                                  >
-                                    <option value="">Ressource</option>
-                                    {sortedResources.map((res) => (
-                                      <option
-                                        key={`endgame-req-res-mobile-${row.id}-${res.id}`}
-                                        value={res.id}
-                                      >
-                                        {res.code} - {res.name} (#{res.id})
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-
-                                <div>
-                                  <p className="text-[11px] uppercase tracking-widest text-slate-400">
-                                    Montant
-                                  </p>
-                                  <input
-                                    className={inputClass}
-                                    inputMode="decimal"
-                                    value={r.amount ?? ''}
-                                    onChange={(e) =>
-                                      updateField(type, row.id, 'amount', e.target.value)
-                                    }
-                                  />
-                                </div>
-
-                                <div className="flex flex-wrap gap-2 justify-end pt-1">
-                                  <button
-                                    type="button"
-                                    disabled={busy || !canSave}
-                                    onClick={() => requestSave(type, row)}
-                                    className="px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed text-slate-900 font-semibold transition-colors text-xs"
-                                  >
-                                    {busy ? 'Sauvegarde…' : 'Sauvegarder'}
-                                  </button>
-                                  <ActionMenu
-                                    ariaLabel="Actions"
-                                    items={[
-                                      {
-                                        key: 'delete',
-                                        label: 'Supprimer',
-                                        danger: true,
-                                        onClick: () => requestDelete(type, row),
-                                      },
-                                    ]}
-                                  />
-                                </div>
-                              </div>
-                            );
-                          }))}
-                      </div>
-
-                      <TableShell className="hidden md:block" asChild>
-                        <table className="min-w-[900px] w-full text-left text-xs">
-                          <thead className="text-[11px] uppercase tracking-widest text-slate-400">
-                            <tr className="border-b border-amber-500/20">
-                              <th className="py-3 pr-3">ID</th>
-                              <th className="py-3 pr-3">Ressource</th>
-                              <th className="py-3 pr-3">Montant</th>
-                              <th className="py-3">Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {(endgameRequirements || []
-                              .filter(matchesSearch)
-                              .map((row) => {
-                                const type = 'endgame_requirements';
-                                const r = mergedRow(type, row);
-                                const busy = isRowSaving(type, row.id);
-                                const canSave = getRowDiffs(type, row).length > 0;
-
-                                return (
-                                  <tr
-                                    key={`endgame-req-${row.id}`}
-                                    className="border-b border-slate-800/60"
-                                  >
-                                    <td className="py-2 pr-3 font-mono text-amber-300">
-                                      {row.id}
-                                    </td>
-                                    <td className="py-2 pr-3">
-                                      <select
-                                        className={inputClass}
-                                        value={r.resource_id ?? ''}
-                                        onChange={(e) =>
-                                          updateField(
-                                            type,
-                                            row.id,
-                                            'resource_id',
-                                            e.target.value
-                                          )
-                                        }
-                                      >
-                                        <option value="">Ressource</option>
-                                        {sortedResources.map((res) => (
-                                          <option
-                                            key={`endgame-req-res-${row.id}-${res.id}`}
-                                            value={res.id}
-                                          >
-                                            {res.code} - {res.name} (#{res.id})
-                                          </option>
-                                        ))}
-                                      </select>
-                                    </td>
-                                    <td className="py-2 pr-3">
-                                      <input
-                                        className={inputClass}
-                                        inputMode="decimal"
-                                        value={r.amount ?? ''}
-                                        onChange={(e) =>
-                                          updateField(type, row.id, 'amount', e.target.value)
-                                        }
-                                      />
-                                    </td>
-                                    <td className="py-2">
-                                      <div className="flex flex-wrap gap-2">
-                                        <button
-                                          type="button"
-                                          disabled={busy || !canSave}
-                                          onClick={() => requestSave(type, row)}
-                                          className="px-3 py-1 rounded-md bg-amber-500 hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed text-slate-900 font-semibold transition-colors"
-                                        >
-                                          {busy ? 'Sauvegarde…' : 'Sauvegarder'}
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => requestDelete(type, row)}
-                                          className="px-3 py-1 rounded-md border border-red-500/50 text-red-200 hover:bg-red-900/30 transition-colors"
-                                        >
-                                          Supprimer
-                                        </button>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                );
-                              }))}
-                          </tbody>
-                        </table>
-                      </TableShell>
-                    </>
-                  )
-                ) : (
-                  <div className="rounded-xl border border-slate-800/70 bg-slate-950/40 p-3">
-                    {(endgameRankings || []).filter(matchesSearch).length === 0 ? (
-                      <p className="text-sm text-slate-300">Aucun résultat.</p>
-                    ) : (
-                      <>
-                        <div className="md:hidden space-y-2">
-                          {(endgameRankings || [])
-                            .filter(matchesSearch)
-                            .map((row, idx) => (
-                              <A11yDetails
-                                key={`endgame-rank-card-${row?.id ?? idx}`}
-                                className="rounded-lg border border-slate-800/70 bg-slate-950/30 p-3"
-                                summaryClassName="list-none [&::-webkit-details-marker]:hidden cursor-pointer select-none"
-                                summary={
-                                  <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                      <p className="text-sm text-slate-100 font-semibold">
-                                        {row?.username
-                                          ? `${row.username} (#${row.user_id})`
-                                          : row?.user_id ?? '-'}
-                                      </p>
-                                      <p className="text-[11px] text-amber-300 font-mono mt-0.5">
-                                        #{row?.id ?? '-'}
-                                      </p>
-                                    </div>
-                                    <p className="text-[11px] text-slate-300">
-                                      {formatDurationSeconds(
-                                        row?.completion_seconds ?? row?.playtime_seconds
-                                      )}
-                                    </p>
-                                  </div>
-                                }
-                              >
-
-                                <div className="pt-3 space-y-2 text-[11px] text-slate-300">
-                                  <div className="grid gap-2 sm:grid-cols-2">
-                                    <div>
-                                      <p className="uppercase tracking-widest text-slate-500">
-                                        Complété le
-                                      </p>
-                                      <p className="text-slate-200 font-mono">
-                                        {row?.completed_at
-                                          ? new Date(row.completed_at).toLocaleString('fr-FR')
-                                          : '-'}
-                                      </p>
-                                    </div>
-                                    <div>
-                                      <p className="uppercase tracking-widest text-slate-500">
-                                        Temps (s)
-                                      </p>
-                                      <p className="text-slate-200 font-mono">
-                                        {row?.completion_seconds != null
-                                          ? `${row.completion_seconds}s`
-                                          : row?.playtime_seconds != null
-                                            ? `${row.playtime_seconds}s`
-                                            : '-'}
-                                      </p>
-                                    </div>
-                                  </div>
-
-                                  <A11yDetailsWrap summaryClassName="list-none [&::-webkit-details-marker]:hidden cursor-pointer text-slate-200">
-                                    <summary className="list-none [&::-webkit-details-marker]:hidden cursor-pointer text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
-                                      Données (JSON)
-                                    </summary>
-                                    <pre className="mt-2 whitespace-pre-wrap text-[11px] leading-5 rounded-md border border-slate-800/70 bg-slate-950/40 p-2 max-h-60 overflow-y-auto">
-                                      {JSON.stringify(row, null, 2)}
-                                    </pre>
-                                  </A11yDetailsWrap>
-                                </div>
-                              </A11yDetails>
-                            ))}
-                        </div>
-
-                        <TableShell className="hidden md:block" asChild>
-                          <table className="min-w-[900px] w-full text-left text-xs">
-                            <thead className="text-[11px] uppercase tracking-widest text-slate-400">
-                              <tr className="border-b border-slate-800/70">
-                                <th className="py-2 pr-3">ID</th>
-                                <th className="py-2 pr-3">User</th>
-                                <th className="py-2 pr-3">Complété le</th>
-                                <th className="py-2 pr-3">Temps (s)</th>
-                                <th className="py-2">Données</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {(endgameRankings || [])
-                                .filter(matchesSearch)
-                                .map((row, idx) => (
-                                  <tr
-                                    key={`endgame-rank-${row?.id ?? idx}`}
-                                    className="border-b border-slate-800/60"
-                                  >
-                                    <td className="py-2 pr-3 font-mono text-amber-300">
-                                      {row?.id ?? '-'}
-                                    </td>
-                                    <td className="py-2 pr-3 text-slate-300 font-mono">
-                                      {row?.username ? `${row.username} (#${row.user_id})` : row?.user_id ?? '-'}
-                                    </td>
-                                    <td className="py-2 pr-3 text-slate-300">
-                                      {row?.completed_at
-                                        ? new Date(row.completed_at).toLocaleString('fr-FR')
-                                        : '-'}
-                                    </td>
-                                    <td className="py-2 pr-3 text-slate-300 font-mono">
-                                      {formatDurationSeconds(
-                                        row?.completion_seconds ?? row?.playtime_seconds
-                                      )}
-                                      {row?.completion_seconds != null
-                                        ? ` (${row.completion_seconds}s)`
-                                        : row?.playtime_seconds != null
-                                          ? ` (${row.playtime_seconds}s)`
-                                          : ''}
-                                    </td>
-                                    <td className="py-2 text-slate-300 font-mono">
-                                      <pre className="whitespace-pre-wrap text-[11px] leading-5 max-w-[680px]">
-                                        {JSON.stringify(row, null, 2)}
-                                      </pre>
-                                    </td>
-                                  </tr>
-                                ))}
-                            </tbody>
-                          </table>
-                        </TableShell>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
+              <EndgamePanel
+                endgameTab={endgameTab}
+                onTabChange={setEndgameTab}
+                requirementsCount={endgameRequirements.length}
+                rankingsCount={endgameRankings.length}
+                onCreateRequirement={openEndgameCreate}
+                onRefresh={refreshEndgame}
+                loading={endgameLoading}
+                createForm={
+                  <EndgameCreateRequirementForm
+                    open={endgameTab === 'requirements' && createOpen}
+                    inputClass={inputClass}
+                    createDraft={createDraft}
+                    setCreateDraft={setCreateDraft}
+                    sortedResources={sortedResources}
+                    createSaving={createSaving}
+                    onCancel={() => setCreateOpen(false)}
+                    onCreate={handleCreateEndgameRequirement}
+                  />
+                }
+                requirementsContent={
+                  <EndgameRequirementsList
+                    loading={endgameLoading}
+                    requirements={(endgameRequirements || []).filter(matchesSearch)}
+                    inputClass={inputClass}
+                    mergedRow={mergedRow}
+                    isRowSaving={isRowSaving}
+                    getRowDiffs={getRowDiffs}
+                    updateField={updateField}
+                    requestSave={requestSave}
+                    requestDelete={requestDelete}
+                    sortedResources={sortedResources}
+                  />
+                }
+                rankingsContent={
+                  <EndgameRankingsTable
+                    loading={endgameLoading}
+                    rankings={(endgameRankings || []).filter(matchesSearch)}
+                    formatDurationSeconds={formatDurationSeconds}
+                  />
+                }
+              />
             ) : (
               <BalanceList
                 activeTab={activeTab}
@@ -3098,6 +2725,10 @@ function AdminPage() {
 }
 
 export default AdminPage;
+
+
+
+
 
 
 
