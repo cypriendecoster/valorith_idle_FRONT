@@ -21,6 +21,7 @@ export default function useEndgameState({
   getRowDiffs,
   updateField,
   requestSave,
+  requestBatchSave,
   requestDelete,
   endgameRankings,
   formatDurationSeconds,
@@ -62,6 +63,7 @@ export default function useEndgameState({
         getRowDiffs={getRowDiffs}
         updateField={updateField}
         requestSave={requestSave}
+        requestBatchSave={requestBatchSave}
         requestDelete={requestDelete}
         sortedResources={sortedResources}
       />
@@ -76,6 +78,7 @@ export default function useEndgameState({
       getRowDiffs,
       updateField,
       requestSave,
+      requestBatchSave,
       requestDelete,
       sortedResources,
     ]

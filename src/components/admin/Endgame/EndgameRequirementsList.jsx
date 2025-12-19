@@ -1,5 +1,7 @@
+import { useMemo } from 'react';
 import ActionMenu from '../../ui/ActionMenu';
 import A11yDetails from '../../ui/A11yDetails';
+import A11yDetailsWrap from '../../ui/A11yDetailsWrap';
 import TableShell from '../../ui/TableShell';
 import SkeletonCards from '../../ui/SkeletonCards';
 import SkeletonTable from '../../ui/SkeletonTable';
@@ -13,6 +15,7 @@ export default function EndgameRequirementsList({
   getRowDiffs,
   updateField,
   requestSave,
+  requestBatchSave,
   requestDelete,
   sortedResources = [],
 }) {
@@ -21,6 +24,7 @@ export default function EndgameRequirementsList({
   const rowDiffs = getRowDiffs || (() => []);
   const onUpdate = updateField || (() => {});
   const onSave = requestSave || (() => {});
+  const onBatchSave = requestBatchSave || (() => {});
   const onDelete = requestDelete || (() => {});
   const findResourceLabel = (value) => {
     if (value == null || value === '') return '-';
@@ -61,8 +65,74 @@ export default function EndgameRequirementsList({
     return <p className="text-sm text-slate-300">Aucun resultat.</p>;
   }
 
+  const dirtyRows = useMemo(
+    () => requirements.filter((row) => rowDiffs('endgame_requirements', row).length > 0),
+    [requirements, rowDiffs]
+  );
+
+  const batchDiffs = useMemo(
+    () =>
+      dirtyRows.flatMap((row) =>
+        rowDiffs('endgame_requirements', row).map((diff) => ({
+          ...diff,
+          field: `#${row.id} ${diff.field}`,
+        }))
+      ),
+    [dirtyRows, rowDiffs]
+  );
+
   return (
     <>
+      <div className="mb-3 rounded-xl border border-slate-800/70 bg-slate-950/40 p-3 space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs text-slate-300">
+            Actions endgame (requirements)
+          </p>
+          <button
+            type="button"
+            onClick={() => onBatchSave('endgame_requirements', dirtyRows, batchDiffs)}
+            disabled={dirtyRows.length === 0}
+            className="px-3 py-1 rounded-md bg-amber-500 hover:bg-amber-400 text-xs text-slate-900 font-semibold disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+          >
+            Sauvegarder {dirtyRows.length > 0 ? `(${dirtyRows.length})` : ''}
+          </button>
+        </div>
+        {batchDiffs.length > 0 ? (
+          <A11yDetailsWrap summaryClassName="list-none [&::-webkit-details-marker]:hidden cursor-pointer text-[11px] text-slate-300 hover:text-slate-200">
+            <summary className="list-none [&::-webkit-details-marker]:hidden cursor-pointer text-[11px] text-slate-300 hover:text-slate-200">
+              Apercu des changements ({batchDiffs.length})
+            </summary>
+            <div className="mt-2 max-h-56 overflow-auto rounded-md border border-slate-800/70 bg-slate-950/40 p-2">
+              <table className="w-full text-left text-xs">
+                <thead className="text-[11px] uppercase tracking-widest text-slate-400">
+                  <tr className="border-b border-slate-800/70">
+                    <th className="py-2 pr-3">Champ</th>
+                    <th className="py-2 pr-3">Avant</th>
+                    <th className="py-2">Apres</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {batchDiffs.map((diff, idx) => (
+                    <tr
+                      key={`endgame-batch-diff-${idx}-${diff.field}`}
+                      className="border-b border-slate-800/60"
+                    >
+                      <td className="py-2 pr-3 text-slate-200 font-mono">
+                        {diff.field}
+                      </td>
+                      <td className="py-2 pr-3 text-slate-300">
+                        {diff.before}
+                      </td>
+                      <td className="py-2 text-slate-100">{diff.after}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </A11yDetailsWrap>
+        ) : null}
+      </div>
+
       <div className="md:hidden space-y-2">
         {requirements.map((row) => {
           const type = 'endgame_requirements';

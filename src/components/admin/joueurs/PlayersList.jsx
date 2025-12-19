@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import Badge from '../../ui/Badge';
 import PaginationControls from '../../ui/PaginationControls';
 import SkeletonCards from '../../ui/SkeletonCards';
@@ -18,11 +19,40 @@ export default function PlayersList({
   selectedPlayerId,
   onSortByChange,
   onSortDirToggle,
+  onSortDirChange,
   onLimitChange,
   onPrevPage,
   onNextPage,
   onSelectPlayer,
 }) {
+  const [localSearch, setLocalSearch] = useState('');
+  const normalizedSearch = localSearch.trim().toLowerCase();
+
+  const filteredPlayers = useMemo(() => {
+    if (!normalizedSearch) return players;
+    return (players || []).filter((player) => {
+      const id = String(player?.id ?? '').toLowerCase();
+      const username = String(player?.username ?? '').toLowerCase();
+      const email = String(player?.email ?? '').toLowerCase();
+      const role = String(player?.role ?? '').toLowerCase();
+      return (
+        id.includes(normalizedSearch) ||
+        username.includes(normalizedSearch) ||
+        email.includes(normalizedSearch) ||
+        role.includes(normalizedSearch)
+      );
+    });
+  }, [players, normalizedSearch]);
+
+  const applyPreset = (sortBy, sortDir) => {
+    if (onSortByChange) onSortByChange(sortBy);
+    if (onSortDirChange) {
+      onSortDirChange(sortDir);
+    } else if (onSortDirToggle && playersSortDir !== sortDir) {
+      onSortDirToggle();
+    }
+  };
+
   const handleSelect = (player) => {
     if (!onSelectPlayer) return;
     onSelectPlayer(player);
@@ -37,6 +67,9 @@ export default function PlayersList({
             <span className="px-2 py-0.5 rounded-full border border-slate-700 text-[10px] text-slate-300">
               Recherche serveur
             </span>
+            <span className="px-2 py-0.5 rounded-full border border-slate-700 text-[10px] text-slate-300">
+              Filtre local
+            </span>
           </div>
           {playersLoading && <p className="text-[11px] text-slate-500">Chargement...</p>}
         </div>
@@ -44,6 +77,7 @@ export default function PlayersList({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-[11px] text-slate-400">
             {playersFrom}-{playersTo} / {playersTotal}
+            {normalizedSearch ? ` · Local: ${filteredPlayers.length}` : ''}
           </p>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -93,6 +127,40 @@ export default function PlayersList({
             />
           </div>
         </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            value={localSearch}
+            aria-label="Filtrer localement la liste des joueurs"
+            onChange={(e) => setLocalSearch(e.target.value)}
+            placeholder="Filtre local (id, pseudo, email, role...)"
+            className="flex-1 min-w-0 md:flex-none md:w-72 rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
+          />
+          {localSearch ? (
+            <button
+              type="button"
+              onClick={() => setLocalSearch('')}
+              aria-label="Reinitialiser le filtre local"
+              className="px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
+            >
+              Reset local
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => applyPreset('last_login_at', 'DESC')}
+            className="px-3 py-2 rounded-lg border border-amber-500/50 text-amber-200 hover:bg-amber-500/10 transition-colors text-xs"
+          >
+            Dernieres connexions
+          </button>
+          <button
+            type="button"
+            onClick={() => applyPreset('created_at', 'DESC')}
+            className="px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
+          >
+            Nouveaux comptes
+          </button>
+        </div>
       </div>
 
       {playersLoading ? (
@@ -104,12 +172,12 @@ export default function PlayersList({
             <SkeletonTable rows={8} cols={5} titleWidth="w-32" />
           </div>
         </div>
-      ) : players.length === 0 ? (
+      ) : filteredPlayers.length === 0 ? (
         <p className="text-sm text-slate-300">Aucun joueur.</p>
       ) : (
         <>
           <div className="md:hidden space-y-2">
-            {players.map((player) => {
+            {filteredPlayers.map((player) => {
               const selected = Number(selectedPlayerId) === Number(player.id);
               return (
                 <button
@@ -166,7 +234,7 @@ export default function PlayersList({
                 </tr>
               </thead>
               <tbody>
-                {players.map((player) => {
+                {filteredPlayers.map((player) => {
                   const selected = Number(selectedPlayerId) === Number(player.id);
                   const selectPlayer = () => handleSelect(player);
                   return (

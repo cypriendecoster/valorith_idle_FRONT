@@ -1345,7 +1345,7 @@ function AdminPage() {
     });
   };
 
-    const requestBatchSave = (type, rows, diffs) => {
+  const requestBatchSave = (type, rows, diffs) => {
     const dirtyRows = (rows || []).filter((row) => getRowDiffs(type, row).length > 0);
     if (dirtyRows.length === 0) {
       setToast({ type: 'success', message: 'Aucune modification a sauvegarder.' });
@@ -2428,6 +2428,7 @@ function AdminPage() {
     getRowDiffs,
     updateField,
     requestSave,
+    requestBatchSave,
     requestDelete,
     endgameRankings,
     formatDurationSeconds,

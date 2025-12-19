@@ -72,14 +72,18 @@ export default function usePlayersState({
       playersPage,
       playersMaxPage,
       selectedPlayerId,
-      onSortByChange: (value) => {
-        setPlayersSortBy(value);
-        setPlayersPage(0);
-      },
-      onSortDirToggle: () => {
-        setPlayersSortDir((p) => (p === 'ASC' ? 'DESC' : 'ASC'));
-        setPlayersPage(0);
-      },
+  onSortByChange: (value) => {
+    setPlayersSortBy(value);
+    setPlayersPage(0);
+  },
+  onSortDirChange: (value) => {
+    setPlayersSortDir(value);
+    setPlayersPage(0);
+  },
+  onSortDirToggle: () => {
+    setPlayersSortDir((p) => (p === 'ASC' ? 'DESC' : 'ASC'));
+    setPlayersPage(0);
+  },
       onLimitChange: (value) => {
         setPlayersLimit(Number(value));
         setPlayersPage(0);
