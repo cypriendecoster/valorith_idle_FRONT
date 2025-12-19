@@ -65,6 +65,17 @@ export default function SupportToolbar({
         >
           {supportTicketsLoading ? '...' : 'Rafraichir'}
         </button>
+        {selectedCount > 0 ? (
+          <button
+            type="button"
+            onClick={() => onCloseSelected && onCloseSelected()}
+            disabled={closeDisabled}
+            aria-label="Clore les tickets selectionnes"
+            className="px-3 py-2 rounded-lg border border-red-500/50 text-red-200 hover:bg-red-900/30 disabled:opacity-60 disabled:cursor-not-allowed transition-colors text-xs"
+          >
+            Clore selection ({selectedCount})
+          </button>
+        ) : null}
 
         <button
           type="button"

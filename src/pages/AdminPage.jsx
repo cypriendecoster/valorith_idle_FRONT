@@ -1979,7 +1979,7 @@ function AdminPage() {
       );
       setToast({
         type: 'success',
-        message: ${selectedTicketIds.length} ticket(s) cloture(s).,
+        message: `${selectedTicketIds.length} ticket(s) cloture(s).`,
       });
       setSelectedTicketIds([]);
       await refreshSupportTickets();
