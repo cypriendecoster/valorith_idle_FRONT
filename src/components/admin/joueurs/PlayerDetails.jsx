@@ -98,25 +98,35 @@ export default function PlayerDetails({
           </div>
 
           <div className="grid gap-2 md:grid-cols-3">
-            <select
-              className={`${inputClass} md:col-span-2`}
-              value={playerResourceId}
-              onChange={(e) => setPlayerResourceId(e.target.value)}
-            >
-              <option value="">Choisir une ressource</option>
-              {resources.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.code} - {r.name}
-                </option>
-              ))}
-            </select>
-            <input
-              className={inputClass}
-              inputMode="decimal"
-              placeholder="Montant (ex: 1000)"
-              value={playerResourceAmount}
-              onChange={(e) => setPlayerResourceAmount(e.target.value)}
-            />
+            <div className="md:col-span-2">
+              <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                Ressource
+              </p>
+              <select
+                className={inputClass}
+                value={playerResourceId}
+                onChange={(e) => setPlayerResourceId(e.target.value)}
+              >
+                <option value="">Choisir une ressource</option>
+                {resources.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.code} - {r.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                Montant
+              </p>
+              <input
+                className={inputClass}
+                inputMode="decimal"
+                placeholder="Montant (ex: 1000)"
+                value={playerResourceAmount}
+                onChange={(e) => setPlayerResourceAmount(e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-2">

@@ -30,10 +30,11 @@ export default function TicketDetail({
   };
 
   return (
-    <>
+    <div aria-live="polite" aria-atomic="true">
       <button
         type="button"
         onClick={onBack}
+        aria-label="Retour"
         className="lg:hidden px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
       >
         {'<'} Retour
@@ -95,6 +96,7 @@ export default function TicketDetail({
             <button
               type="button"
               onClick={() => openPage(selectedTicket.page_url)}
+              aria-label="Ouvrir la page du ticket"
               className="px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
             >
               Ouvrir page
@@ -150,6 +152,6 @@ export default function TicketDetail({
           Clore
         </button>
       </div>
-    </>
+    </div>
   );
 }

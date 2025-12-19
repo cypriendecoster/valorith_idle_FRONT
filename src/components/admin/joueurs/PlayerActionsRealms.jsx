@@ -13,18 +13,21 @@ export default function PlayerActionsRealms({
     <div className="grid gap-3 rounded-lg border border-slate-800 bg-slate-950/30 p-3">
       <p className="text-xs text-slate-300 font-semibold">Royaumes</p>
       <div className="grid gap-2 md:grid-cols-3">
-        <select
-          className={`${inputClass} md:col-span-2`}
-          value={playerRealmCode}
-          onChange={(e) => setPlayerRealmCode(e.target.value)}
-        >
-          <option value="">Debloquer un royaume</option>
-          {realms.map((realm) => (
-            <option key={realm.id} value={realm.code}>
-              {realm.code} - {realm.name}
-            </option>
-          ))}
-        </select>
+        <div className="md:col-span-2">
+          <p className="text-[11px] uppercase tracking-widest text-slate-400">Debloquer</p>
+          <select
+            className={inputClass}
+            value={playerRealmCode}
+            onChange={(e) => setPlayerRealmCode(e.target.value)}
+          >
+            <option value="">Debloquer un royaume</option>
+            {realms.map((realm) => (
+              <option key={realm.id} value={realm.code}>
+                {realm.code} - {realm.name}
+              </option>
+            ))}
+          </select>
+        </div>
         <button
           type="button"
           disabled={playerResourceSaving}
@@ -36,18 +39,21 @@ export default function PlayerActionsRealms({
       </div>
 
       <div className="grid gap-2 md:grid-cols-3">
-        <select
-          className={`${inputClass} md:col-span-2`}
-          value={playerRealmActivateId}
-          onChange={(e) => setPlayerRealmActivateId(e.target.value)}
-        >
-          <option value="">Activer un royaume (id)</option>
-          {realms.map((realm) => (
-            <option key={realm.id} value={realm.id}>
-              #{realm.id} - {realm.name}
-            </option>
-          ))}
-        </select>
+        <div className="md:col-span-2">
+          <p className="text-[11px] uppercase tracking-widest text-slate-400">Activer</p>
+          <select
+            className={inputClass}
+            value={playerRealmActivateId}
+            onChange={(e) => setPlayerRealmActivateId(e.target.value)}
+          >
+            <option value="">Activer un royaume (id)</option>
+            {realms.map((realm) => (
+              <option key={realm.id} value={realm.id}>
+                #{realm.id} - {realm.name}
+              </option>
+            ))}
+          </select>
+        </div>
         <button
           type="button"
           disabled={playerResourceSaving}

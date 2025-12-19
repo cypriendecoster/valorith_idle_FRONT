@@ -11,43 +11,49 @@ export default function PlayerActionsFactories({
 }) {
   return (
     <div className="grid gap-2 md:grid-cols-4">
-      <select
-        className={`${inputClass} md:col-span-2`}
-        value={playerFactoryId}
-        onChange={(e) => {
-          const nextId = e.target.value;
-          setPlayerFactoryId(nextId);
-          if (!nextId) {
-            setPlayerFactoryLevel('');
-            return;
+      <div className="md:col-span-2">
+        <p className="text-[11px] uppercase tracking-widest text-slate-400">Usine</p>
+        <select
+          className={inputClass}
+          value={playerFactoryId}
+          onChange={(e) => {
+            const nextId = e.target.value;
+            setPlayerFactoryId(nextId);
+            if (!nextId) {
+              setPlayerFactoryLevel('');
+              return;
+            }
+            const current = playerFactoryLevelById.get(Number(nextId));
+            if (current != null && Number.isFinite(current)) {
+              setPlayerFactoryLevel(String(current));
+            }
+          }}
+        >
+          <option value="">Choisir une usine</option>
+          {factories.map((factory) => (
+            <option key={factory.id} value={factory.id}>
+              #{factory.id} - {factory.code} - {factory.name} (actuel:{' '}
+              {playerFactoryLevelById.get(Number(factory.id)) ?? 0})
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <p className="text-[11px] uppercase tracking-widest text-slate-400">Niveau</p>
+        <input
+          className={inputClass}
+          inputMode="numeric"
+          placeholder={
+            playerFactoryId
+              ? `Niveau (actuel: ${
+                  playerFactoryLevelById.get(Number(playerFactoryId)) ?? 0
+                })`
+              : 'Niveau'
           }
-          const current = playerFactoryLevelById.get(Number(nextId));
-          if (current != null && Number.isFinite(current)) {
-            setPlayerFactoryLevel(String(current));
-          }
-        }}
-      >
-        <option value="">Choisir une usine</option>
-        {factories.map((factory) => (
-          <option key={factory.id} value={factory.id}>
-            #{factory.id} - {factory.code} - {factory.name} (actuel:{' '}
-            {playerFactoryLevelById.get(Number(factory.id)) ?? 0})
-          </option>
-        ))}
-      </select>
-      <input
-        className={inputClass}
-        inputMode="numeric"
-        placeholder={
-          playerFactoryId
-            ? `Niveau (actuel: ${
-                playerFactoryLevelById.get(Number(playerFactoryId)) ?? 0
-              })`
-            : 'Niveau'
-        }
-        value={playerFactoryLevel}
-        onChange={(e) => setPlayerFactoryLevel(e.target.value)}
-      />
+          value={playerFactoryLevel}
+          onChange={(e) => setPlayerFactoryLevel(e.target.value)}
+        />
+      </div>
       <button
         type="button"
         disabled={playerResourceSaving}

@@ -61,11 +61,26 @@ export default function EndgamePanel({
 
       {endgameTab === 'requirements' ? (
         <>
-          {createForm || null}
-          {requirementsContent || null}
+          <div className="border-t border-slate-800/70 pt-3">
+            <p className="text-[11px] uppercase tracking-widest text-slate-400 mb-2">
+              Creation
+            </p>
+            {createForm || null}
+          </div>
+          <div className="border-t border-slate-800/70 pt-3">
+            <p className="text-[11px] uppercase tracking-widest text-slate-400 mb-2">
+              Liste des regles
+            </p>
+            {requirementsContent || null}
+          </div>
         </>
       ) : (
-        rankingsContent || null
+        <div className="border-t border-slate-800/70 pt-3">
+          <p className="text-[11px] uppercase tracking-widest text-slate-400 mb-2">
+            Classement
+          </p>
+          {rankingsContent || null}
+        </div>
       )}
     </div>
   );

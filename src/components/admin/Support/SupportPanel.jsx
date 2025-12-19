@@ -44,10 +44,21 @@ export default function SupportPanel({
           </button>
         </div>
 
+      </div>
+
+      <div className="border-t border-slate-800/70 pt-3">
+        <p className="text-[11px] uppercase tracking-widest text-slate-400 mb-2">
+          {supportTab === 'tickets' ? 'Filtres tickets' : 'Filtres logs'}
+        </p>
         {supportTab === 'tickets' ? ticketsToolbar || null : logsToolbar || null}
       </div>
 
-      {supportTab === 'tickets' ? ticketsContent || null : logsContent || null}
+      <div className="border-t border-slate-800/70 pt-3">
+        <p className="text-[11px] uppercase tracking-widest text-slate-400 mb-2">
+          {supportTab === 'tickets' ? 'Liste des tickets' : 'Liste des logs'}
+        </p>
+        {supportTab === 'tickets' ? ticketsContent || null : logsContent || null}
+      </div>
     </div>
   );
 }

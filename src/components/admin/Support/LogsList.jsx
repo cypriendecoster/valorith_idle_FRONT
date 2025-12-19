@@ -20,7 +20,11 @@ export default function LogsList({
   }
 
   if (!filteredLogs || filteredLogs.length === 0) {
-    return <p className="text-sm text-slate-300">Aucun log.</p>;
+    return (
+      <div className="rounded-lg border border-slate-800/70 bg-slate-950/30 p-3">
+        <p className="text-sm text-slate-300">Aucun resultat.</p>
+      </div>
+    );
   }
 
   return (

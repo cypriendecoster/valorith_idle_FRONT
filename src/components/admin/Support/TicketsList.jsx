@@ -23,7 +23,11 @@ export default function TicketsList({
   }
 
   if (!supportTickets || supportTickets.length === 0) {
-    return <p className="text-sm text-slate-300">Aucun ticket.</p>;
+    return (
+      <div className="rounded-lg border border-slate-800/70 bg-slate-950/30 p-3">
+        <p className="text-sm text-slate-300">Aucun resultat.</p>
+      </div>
+    );
   }
 
   const selectTicket = (ticket) => {

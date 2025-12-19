@@ -7,11 +7,12 @@ export default function PlayerMiniStickyHeader({
   return (
     <div className="sticky top-0 z-20 -mx-3 px-3 py-3 bg-slate-950/85 backdrop-blur border-b border-slate-800/70">
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div aria-live="polite" aria-atomic="true">
           {selectedPlayerId ? (
             <button
               type="button"
               onClick={onBack}
+              aria-label="Retour"
               className="lg:hidden mb-2 px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
             >
               {'<'} Retour

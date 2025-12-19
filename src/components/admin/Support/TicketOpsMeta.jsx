@@ -65,6 +65,7 @@ export default function TicketOpsMeta({
                   <button
                     type="button"
                     onClick={() => openPage(selectedTicket.page_url)}
+                    aria-label="Ouvrir la page du ticket"
                     className="px-2 py-1 rounded-md border border-slate-700 text-[11px] text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
                   >
                     Ouvrir
@@ -72,6 +73,7 @@ export default function TicketOpsMeta({
                   <button
                     type="button"
                     onClick={() => handleCopy(selectedTicket.page_url, 'URL page')}
+                    aria-label="Copier l'URL de la page"
                     className="px-2 py-1 rounded-md border border-slate-700 text-[11px] text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
                   >
                     Copier
@@ -106,6 +108,7 @@ export default function TicketOpsMeta({
           type="button"
           onClick={() => handleCopy(selectedTicket.ip_address, 'IP')}
           disabled={!normalizeText(selectedTicket.ip_address)}
+          aria-label="Copier l'adresse IP"
           className="px-2 py-1 rounded-md border border-slate-700 text-[11px] text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
         >
           Copier IP
@@ -114,6 +117,7 @@ export default function TicketOpsMeta({
           type="button"
           onClick={() => handleCopy(selectedTicket.user_agent, 'User-Agent')}
           disabled={!normalizeText(selectedTicket.user_agent)}
+          aria-label="Copier le User-Agent"
           className="px-2 py-1 rounded-md border border-slate-700 text-[11px] text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
         >
           Copier UA

@@ -30,108 +30,15 @@ import EndgamePanel from '../components/admin/Endgame/EndgamePanel';
 import EndgameCreateRequirementForm from '../components/admin/Endgame/EndgameCreateRequirementForm';
 import EndgameRequirementsList from '../components/admin/Endgame/EndgameRequirementsList';
 import EndgameRankingsTable from '../components/admin/Endgame/EndgameRankingsTable';
+import usePlayersState from '../hooks/admin/usePlayersState';
+import useSupportState from '../hooks/admin/useSupportState.jsx';
+import useEndgameState from '../hooks/admin/useEndgameState.jsx';
 import AdminToolbar from '../components/admin/layout/AdminToolbar';
 import AdminSectionTitle from '../components/admin/layout/AdminSectionTitle';
 import { adminService } from '../services/AdminService';
 import { authService } from '../services/AuthService';
+import { normalizeText, toNumberOrNull, toNonNegativeIntOrNull, toBooleanInt, formatDurationSeconds, clampInt, normalizeSortDir, parseBigIntLoose, formatIntegerFull, formatIntegerCompact } from '../utils/adminFormatters';
 
-function normalizeText(value) {
-  return String(value ?? '').trim();
-}
-
-function toNumberOrNull(value) {
-  const trimmed = String(value ?? '').trim();
-  if (!trimmed) return null;
-  const n = Number(trimmed);
-  return Number.isFinite(n) ? n : null;
-}
-
-function toNonNegativeIntOrNull(value) {
-  const n = toNumberOrNull(value);
-  if (n == null) return null;
-  if (n < 0) return null;
-  return Math.floor(n);
-}
-
-function toBooleanInt(value) {
-  return value ? 1 : 0;
-}
-
-function formatDurationSeconds(value) {
-  const seconds = Number(value);
-  if (!Number.isFinite(seconds) || seconds < 0) return '-';
-  const total = Math.floor(seconds);
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  const pad = (n) => String(n).padStart(2, '0');
-  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
-}
-
-function clampInt(value, { min = 0, max = Number.MAX_SAFE_INTEGER } = {}) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return min;
-  const i = Math.trunc(n);
-  return Math.min(max, Math.max(min, i));
-}
-
-function normalizeSortDir(value, fallback = 'DESC') {
-  const dir = String(value ?? '').trim().toUpperCase();
-  return dir === 'ASC' || dir === 'DESC' ? dir : fallback;
-}
-
-function parseBigIntLoose(value) {
-  if (value == null) return null;
-  if (typeof value === 'bigint') return value;
-  if (typeof value === 'number') {
-    if (!Number.isFinite(value)) return null;
-    return BigInt(Math.trunc(value));
-  }
-  const raw = String(value).trim();
-  if (!raw) return null;
-  const sign = raw.startsWith('-') ? '-' : '';
-  const digitsOnly = raw.replace(/[^\d]/g, '');
-  if (!digitsOnly) return null;
-  try {
-    return BigInt(`${sign}${digitsOnly}`);
-  } catch {
-    return null;
-  }
-}
-
-function formatIntegerFull(value, locale = 'fr-FR') {
-  const n = parseBigIntLoose(value);
-  if (n == null) return String(value ?? '-');
-  try {
-    return new Intl.NumberFormat(locale).format(n);
-  } catch {
-    return n.toString();
-  }
-}
-
-function formatIntegerCompact(value, locale = 'fr-FR') {
-  const n = parseBigIntLoose(value);
-  if (n == null) return '-';
-  const sign = n < 0n ? '-' : '';
-  const abs = n < 0n ? -n : n;
-  const thousand = 1000n;
-  const units = ['', 'k', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No'];
-  let unitIndex = 0;
-  let div = 1n;
-  while (unitIndex < units.length - 1 && abs >= div * thousand) {
-    div *= thousand;
-    unitIndex += 1;
-  }
-  if (unitIndex === 0) return formatIntegerFull(abs, locale);
-
-  const scaledTimes10 = (abs * 10n) / div;
-  const whole = scaledTimes10 / 10n;
-  const dec = scaledTimes10 % 10n;
-  const decSep = locale.startsWith('fr') ? ',' : '.';
-  const wholeStr = formatIntegerFull(whole, locale);
-  const decStr = dec === 0n ? '' : `${decSep}${dec.toString()}`;
-  return `${sign}${wholeStr}${decStr}${units[unitIndex]}`;
-}
 
 function AdminPage() {
   const navigate = useNavigate();
@@ -2320,6 +2227,158 @@ function AdminPage() {
     Math.ceil(Math.max(0, logsTotal) / Math.max(1, logsLimit)) - 1
   );
 
+  const { listProps: playersListProps, detailsProps: playersDetailsProps } = usePlayersState({
+    players,
+    playersLoading,
+    playersFrom,
+    playersTo,
+    playersTotal,
+    playersSortBy,
+    playersSortDir,
+    playersLimit,
+    playersPage,
+    playersMaxPage,
+    selectedPlayerId,
+    setPlayersSortBy,
+    setPlayersPage,
+    setPlayersSortDir,
+    setPlayersLimit,
+    setSelectedPlayerId,
+    setPlayerResourceId,
+    setPlayerResourceAmount,
+    setPlayerRealmCode,
+    setPlayerRealmActivateId,
+    setPlayerFactoryId,
+    setPlayerFactoryLevel,
+    setPlayerSkillId,
+    setPlayerSkillLevel,
+    setSelectedPlayerFactories,
+    setSelectedPlayerSkills,
+    selectedPlayer,
+    refreshSelectedPlayer,
+    inputClass,
+    realms,
+    factories,
+    skills,
+    resources,
+    playerRealmCode,
+    playerRealmActivateId,
+    playerFactoryId,
+    playerFactoryLevel,
+    playerFactoryLevelById,
+    playerSkillId,
+    playerSkillLevel,
+    playerSkillLevelById,
+    playerResourceId,
+    playerResourceAmount,
+    playerResourceSaving,
+    handlePlayerUnlockRealm,
+    handlePlayerActivateRealm,
+    handlePlayerSetFactoryLevel,
+    handlePlayerSetSkillLevel,
+    handlePlayerAddResource,
+    handlePlayerRemoveResource,
+    handlePlayerSet,
+    selectedPlayerResources,
+    formatIntegerFull,
+    formatIntegerCompact,
+    playerDangerLoading,
+    requestPlayerReset,
+    requestPlayerDelete,
+  });
+
+  const {
+    supportMaintenance,
+    supportTicketsToolbar,
+    supportLogsToolbar,
+    supportTicketsContent,
+    supportLogsContent,
+  } = useSupportState({
+    maintenanceLoading,
+    maintenanceSaving,
+    maintenanceMessage,
+    setMaintenanceMessage,
+    maintenanceRetryAfter,
+    setMaintenanceRetryAfter,
+    maintenanceEnabled,
+    saveMaintenance,
+    supportStatus,
+    setSupportStatus,
+    supportCategory,
+    setSupportCategory,
+    supportCategoryOptions,
+    supportSearch,
+    setSupportSearch,
+    supportSortDir,
+    setSupportSortDir,
+    supportLimit,
+    setSupportLimit,
+    supportTicketsLoading,
+    supportTicketsTotal,
+    supportPage,
+    supportMaxPage,
+    supportFrom,
+    supportTo,
+    setSupportPage,
+    refreshSupportTickets,
+    logsSearch,
+    setLogsSearch,
+    logsActionType,
+    setLogsActionType,
+    logsTargetTable,
+    setLogsTargetTable,
+    logsUserId,
+    setLogsUserId,
+    logsSortDir,
+    setLogsSortDir,
+    logsLimit,
+    setLogsLimit,
+    logsLoading,
+    logsTotal,
+    logsPage,
+    logsMaxPage,
+    logsFrom,
+    logsTo,
+    setLogsPage,
+    refreshAdminLogs,
+    setLogsPrefetched,
+    supportTickets,
+    selectedTicketId,
+    setSelectedTicketId,
+    selectedTicket,
+    normalizeText,
+    copyWithToast,
+    setToast,
+    handleTicketStatus,
+    filteredLogs,
+  });
+
+  const {
+    endgameCreateForm,
+    endgameRequirementsContent,
+    endgameRankingsContent,
+  } = useEndgameState({
+    endgameTab,
+    createOpen,
+    inputClass,
+    createDraft,
+    setCreateDraft,
+    sortedResources,
+    createSaving,
+    setCreateOpen,
+    handleCreateEndgameRequirement,
+    endgameLoading,
+    endgameRequirements,
+    matchesSearch,
+    mergedRow,
+    isRowSaving,
+    getRowDiffs,
+    updateField,
+    requestSave,
+    requestDelete,
+    endgameRankings,
+    formatDurationSeconds,
+  });
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-amber-950 text-slate-100">
       <Toast toast={toast} />
@@ -2385,7 +2444,7 @@ function AdminPage() {
               }}
               showCreate={isBalanceTab}
               onCreate={openCreate}
-              createLabel="Créer"
+              createLabel="Creer"
               onReset={() => {
                 if (activeTab === 'players') {
                   setPlayersSearch('');
@@ -2394,7 +2453,7 @@ function AdminPage() {
                   setSearch('');
                 }
               }}
-              resetAriaLabel="Réinitialiser la recherche"
+              resetAriaLabel="Reinitialiser la recherche"
             />
           </div>
 
@@ -2416,98 +2475,19 @@ function AdminPage() {
               onCreate={handleCreate}
               onCancel={() => setCreateOpen(false)}
             />
+
             {activeTab === 'players' ? (
-            <PlayersPanel
-              selectedPlayerId={selectedPlayerId}
-              listProps={{
-                players,
-                playersLoading,
-                playersFrom,
-                playersTo,
-                playersTotal,
-                playersSortBy,
-                playersSortDir,
-                playersLimit,
-                playersPage,
-                playersMaxPage,
-                selectedPlayerId,
-                onSortByChange: (value) => {
-                  setPlayersSortBy(value);
-                  setPlayersPage(0);
-                },
-                onSortDirToggle: () => {
-                  setPlayersSortDir((p) => (p === 'ASC' ? 'DESC' : 'ASC'));
-                  setPlayersPage(0);
-                },
-                onLimitChange: (value) => {
-                  setPlayersLimit(Number(value));
-                  setPlayersPage(0);
-                },
-                onPrevPage: () => setPlayersPage((p) => Math.max(0, p - 1)),
-                onNextPage: () => setPlayersPage((p) => Math.min(playersMaxPage, p + 1)),
-                onSelectPlayer: (player) => {
-                  setSelectedPlayerId(player.id);
-                  setPlayerResourceId('');
-                  setPlayerResourceAmount('');
-                  setPlayerRealmCode('');
-                  setPlayerRealmActivateId('');
-                  setPlayerFactoryId('');
-                  setPlayerFactoryLevel('');
-                  setPlayerSkillId('');
-                  setPlayerSkillLevel('');
-                  setSelectedPlayerFactories([]);
-                  setSelectedPlayerSkills([]);
-                },
-              }}
-              detailsProps={{
-                selectedPlayerId,
-                selectedPlayer,
-                onBack: () => setSelectedPlayerId(null),
-                refreshSelectedPlayer,
-                inputClass,
-                realms,
-                factories,
-                skills,
-                resources,
-                playerRealmCode,
-                setPlayerRealmCode,
-                playerRealmActivateId,
-                setPlayerRealmActivateId,
-                playerFactoryId,
-                setPlayerFactoryId,
-                playerFactoryLevel,
-                setPlayerFactoryLevel,
-                playerFactoryLevelById,
-                playerSkillId,
-                setPlayerSkillId,
-                playerSkillLevel,
-                setPlayerSkillLevel,
-                playerSkillLevelById,
-                playerResourceId,
-                setPlayerResourceId,
-                playerResourceAmount,
-                setPlayerResourceAmount,
-                playerResourceSaving,
-                handlePlayerUnlockRealm,
-                handlePlayerActivateRealm,
-                handlePlayerSetFactoryLevel,
-                handlePlayerSetSkillLevel,
-                handlePlayerAddResource,
-                handlePlayerRemoveResource,
-                handlePlayerSet,
-                selectedPlayerResources,
-                formatIntegerFull,
-                formatIntegerCompact,
-                playerDangerLoading,
-                requestPlayerReset,
-                requestPlayerDelete,
-              }}
-            />
+              <PlayersPanel
+                selectedPlayerId={selectedPlayerId}
+                listProps={playersListProps}
+                detailsProps={playersDetailsProps}
+              />
             ) : activeTab === 'support' ? (
               <SupportPanel
                 supportTab={supportTab}
                 onTabChange={(tab) => {
                   setSupportTab(tab);
+                  setSelectedTicketId(null);
                   if (tab === 'tickets') {
                     setSupportPage(0);
                   } else {
@@ -2516,134 +2496,11 @@ function AdminPage() {
                 }}
                 ticketsCount={supportTicketsTotal}
                 logsCount={logsTotal}
-                maintenance={
-                  <MaintenanceCard
-                    maintenanceLoading={maintenanceLoading}
-                    maintenanceSaving={maintenanceSaving}
-                    maintenanceMessage={maintenanceMessage}
-                    setMaintenanceMessage={setMaintenanceMessage}
-                    maintenanceRetryAfter={maintenanceRetryAfter}
-                    setMaintenanceRetryAfter={setMaintenanceRetryAfter}
-                    maintenanceEnabled={maintenanceEnabled}
-                    saveMaintenance={saveMaintenance}
-                  />
-                }
-                ticketsToolbar={
-                  <SupportToolbar
-                    supportStatus={supportStatus}
-                    setSupportStatus={(value) => {
-                      setSupportStatus(value);
-                      setSupportPage(0);
-                    }}
-                    supportCategory={supportCategory}
-                    setSupportCategory={(value) => {
-                      setSupportCategory(value);
-                      setSupportPage(0);
-                    }}
-                    supportCategoryOptions={supportCategoryOptions}
-                    supportSearch={supportSearch}
-                    setSupportSearch={(value) => {
-                      setSupportSearch(value);
-                      setSupportPage(0);
-                    }}
-                    supportSortDir={supportSortDir}
-                    setSupportSortDir={(value) => {
-                      setSupportSortDir(value);
-                      setSupportPage(0);
-                    }}
-                    supportLimit={supportLimit}
-                    setSupportLimit={(value) => {
-                      setSupportLimit(Number(value));
-                      setSupportPage(0);
-                    }}
-                    supportTicketsLoading={supportTicketsLoading}
-                    supportTicketsTotal={supportTicketsTotal}
-                    supportPage={supportPage}
-                    supportMaxPage={supportMaxPage}
-                    supportFrom={supportFrom}
-                    supportTo={supportTo}
-                    setSupportPage={setSupportPage}
-                    refreshSupportTickets={refreshSupportTickets}
-                  />
-                }
-                logsToolbar={
-                  <LogsToolbar
-                    logsSearch={logsSearch}
-                    setLogsSearch={setLogsSearch}
-                    logsActionType={logsActionType}
-                    setLogsActionType={(value) => {
-                      setLogsActionType(value);
-                      setLogsPage(0);
-                      setLogsPrefetched(false);
-                    }}
-                    logsTargetTable={logsTargetTable}
-                    setLogsTargetTable={(value) => {
-                      setLogsTargetTable(value);
-                      setLogsPage(0);
-                      setLogsPrefetched(false);
-                    }}
-                    logsUserId={logsUserId}
-                    setLogsUserId={(value) => {
-                      setLogsUserId(value);
-                      setLogsPage(0);
-                      setLogsPrefetched(false);
-                    }}
-                    logsSortDir={logsSortDir}
-                    setLogsSortDir={(value) => {
-                      setLogsSortDir(value);
-                      setLogsPage(0);
-                    }}
-                    logsLimit={logsLimit}
-                    setLogsLimit={(value) => {
-                      setLogsLimit(Number(value));
-                      setLogsPage(0);
-                    }}
-                    logsLoading={logsLoading}
-                    logsTotal={logsTotal}
-                    logsPage={logsPage}
-                    logsMaxPage={logsMaxPage}
-                    logsFrom={logsFrom}
-                    logsTo={logsTo}
-                    setLogsPage={setLogsPage}
-                    refreshAdminLogs={refreshAdminLogs}
-                  />
-                }
-                ticketsContent={
-                  <div className="grid gap-4 lg:grid-cols-2">
-                    <div
-                      className={`min-w-0 rounded-xl border border-slate-800/70 bg-slate-950/40 p-3 ${
-                        selectedTicketId ? 'hidden lg:block' : ''
-                      }`}
-                    >
-                      <TicketsList
-                        supportTickets={supportTickets}
-                        supportTicketsLoading={supportTicketsLoading}
-                        selectedTicketId={selectedTicketId}
-                        onSelectTicket={(ticket) => setSelectedTicketId(ticket.id)}
-                      />
-                    </div>
-                    <div
-                      className={`min-w-0 rounded-xl border border-slate-800/70 bg-slate-950/40 p-3 space-y-3 ${
-                        selectedTicketId ? '' : 'hidden lg:block'
-                      }`}
-                    >
-                      <TicketDetail
-                        selectedTicketId={selectedTicketId}
-                        selectedTicket={selectedTicket}
-                        onBack={() => setSelectedTicketId(null)}
-                        normalizeText={normalizeText}
-                        copyWithToast={copyWithToast}
-                        setToast={setToast}
-                        handleTicketStatus={handleTicketStatus}
-                      />
-                    </div>
-                  </div>
-                }
-                logsContent={
-                  <div className="rounded-xl border border-slate-800/70 bg-slate-950/40 p-3">
-                    <LogsList logsLoading={logsLoading} filteredLogs={filteredLogs} />
-                  </div>
-                }
+                maintenance={supportMaintenance}
+                ticketsToolbar={supportTicketsToolbar}
+                logsToolbar={supportLogsToolbar}
+                ticketsContent={supportTicketsContent}
+                logsContent={supportLogsContent}
               />
             ) : activeTab === 'endgame' ? (
               <EndgamePanel
@@ -2654,39 +2511,9 @@ function AdminPage() {
                 onCreateRequirement={openEndgameCreate}
                 onRefresh={refreshEndgame}
                 loading={endgameLoading}
-                createForm={
-                  <EndgameCreateRequirementForm
-                    open={endgameTab === 'requirements' && createOpen}
-                    inputClass={inputClass}
-                    createDraft={createDraft}
-                    setCreateDraft={setCreateDraft}
-                    sortedResources={sortedResources}
-                    createSaving={createSaving}
-                    onCancel={() => setCreateOpen(false)}
-                    onCreate={handleCreateEndgameRequirement}
-                  />
-                }
-                requirementsContent={
-                  <EndgameRequirementsList
-                    loading={endgameLoading}
-                    requirements={(endgameRequirements || []).filter(matchesSearch)}
-                    inputClass={inputClass}
-                    mergedRow={mergedRow}
-                    isRowSaving={isRowSaving}
-                    getRowDiffs={getRowDiffs}
-                    updateField={updateField}
-                    requestSave={requestSave}
-                    requestDelete={requestDelete}
-                    sortedResources={sortedResources}
-                  />
-                }
-                rankingsContent={
-                  <EndgameRankingsTable
-                    loading={endgameLoading}
-                    rankings={(endgameRankings || []).filter(matchesSearch)}
-                    formatDurationSeconds={formatDurationSeconds}
-                  />
-                }
+                createForm={endgameCreateForm}
+                requirementsContent={endgameRequirementsContent}
+                rankingsContent={endgameRankingsContent}
               />
             ) : (
               <BalanceList
@@ -2707,23 +2534,22 @@ function AdminPage() {
                 sortedResources={sortedResources}
               />
             )}
-              </div>
-            </div>
-
-          <div className="mt-10 text-center">
-            <button
-              type="button"
-              onClick={() => navigate('/game')}
-              className="inline-flex items-center px-4 py-2 rounded-lg border border-amber-400/60 text-amber-200 text-xs md:text-sm hover:bg-amber-500/10 transition-colors focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
-            >
-              Retour au jeu
-            </button>
           </div>
         </div>
+
+        <div className="mt-10 text-center">
+          <button
+            type="button"
+            onClick={() => navigate('/game')}
+            className="inline-flex items-center px-4 py-2 rounded-lg border border-amber-400/60 text-amber-200 text-xs md:text-sm hover:bg-amber-500/10 transition-colors focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
+          >
+            Retour au jeu
+          </button>
+        </div>
       </div>
+    </div>
   );
 }
-
 export default AdminPage;
 
 
