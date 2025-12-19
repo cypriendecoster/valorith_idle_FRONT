@@ -19,6 +19,13 @@ import BalanceSubTabs from '../components/admin/layout/BalanceSubTabs';
 import CreateBalanceForm from '../components/admin/balance/CreateBalanceForm';
 import BalanceList from '../components/admin/balance/BalanceList';
 import PlayersPanel from '../components/admin/joueurs/PlayersPanel';
+import SupportPanel from '../components/admin/Support/SupportPanel';
+import MaintenanceCard from '../components/admin/Support/MaintenanceCard';
+import SupportToolbar from '../components/admin/Support/SupportToolbar';
+import TicketsList from '../components/admin/Support/TicketsList';
+import TicketDetail from '../components/admin/Support/TicketDetail';
+import LogsToolbar from '../components/admin/Support/LogsToolbar';
+import LogsList from '../components/admin/Support/LogsList';
 import AdminToolbar from '../components/admin/layout/AdminToolbar';
 import AdminSectionTitle from '../components/admin/layout/AdminSectionTitle';
 import { adminService } from '../services/AdminService';
@@ -2493,853 +2500,147 @@ function AdminPage() {
               }}
             />
             ) : activeTab === 'support' ? (
-              <div className="space-y-4">
-                <div className="rounded-xl border border-amber-500/20 bg-black/40 p-4 shadow-[0_0_40px_rgba(251,191,36,0.10)]">
-                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                    <div className="space-y-1">
-                      <p className="text-xs uppercase tracking-[0.25em] text-amber-300">
-                        Système
-                      </p>
-                      <h2 className="text-lg font-heading text-slate-100">
-                        Maintenance
-                      </h2>
-                      <p className="text-xs text-slate-400 max-w-xl">
-                        Active/désactive l’accès à l’API pour les joueurs. Les admins restent autorisés.
-                      </p>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        disabled={maintenanceLoading || maintenanceSaving}
-                        onClick={() => saveMaintenance(true)}
-                        className="px-3 py-2 rounded-md border border-amber-500/50 text-amber-200 hover:bg-amber-500/10 transition-colors disabled:opacity-60 disabled:cursor-not-allowed text-xs"
-                      >
-                        Activer
-                      </button>
-                      <button
-                        type="button"
-                        disabled={maintenanceLoading || maintenanceSaving}
-                        onClick={() => saveMaintenance(false)}
-                        className="px-3 py-2 rounded-md border border-slate-700 text-slate-200 hover:bg-white/5 transition-colors disabled:opacity-60 disabled:cursor-not-allowed text-xs"
-                      >
-                        Désactiver
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div className="md:col-span-2">
-                      <label className="block text-[11px] uppercase tracking-widest text-slate-400 mb-1">
-                        Message (optionnel)
-                      </label>
-                      <input
-                        value={maintenanceMessage}
-                        onChange={(e) => setMaintenanceMessage(e.target.value)}
-                        placeholder="Serveur en maintenance. Merci de réessayer plus tard."
-                        className="w-full rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
-                        disabled={maintenanceLoading || maintenanceSaving}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] uppercase tracking-widest text-slate-400 mb-1">
-                        Réessayer dans (s)
-                      </label>
-                      <input
-                        value={maintenanceRetryAfter}
-                        onChange={(e) => setMaintenanceRetryAfter(e.target.value)}
-                        placeholder="ex: 60"
-                        className="w-full rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
-                        disabled={maintenanceLoading || maintenanceSaving}
-                        inputMode="numeric"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-3 flex items-center justify-between gap-3">
-                    <p className="text-xs text-slate-400">
-                      État :{' '}
-                      <span
-                        className={
-                          maintenanceEnabled
-                            ? 'text-amber-200'
-                            : 'text-emerald-200'
-                        }
-                      >
-                        {maintenanceEnabled ? 'activée' : 'désactivée'}
-                      </span>
-                    </p>
-                    <button
-                      type="button"
-                      disabled={maintenanceLoading || maintenanceSaving}
-                      onClick={() => saveMaintenance()}
-                      className="px-3 py-2 rounded-md border border-amber-400/60 text-amber-200 hover:bg-amber-500/10 transition-colors disabled:opacity-60 disabled:cursor-not-allowed text-xs"
-                    >
-                      {maintenanceSaving ? '...' : 'Enregistrer'}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSupportTab('tickets');
-                        setSupportPage(0);
-                      }}
-                      className={`px-3 py-1 rounded-md border text-xs transition-colors ${supportTab === 'tickets'
-                        ? 'border-amber-400 text-amber-200 bg-amber-500/10'
-                        : 'border-slate-700 text-slate-200 hover:border-amber-400 hover:text-amber-200'
-                        }`}
-                    >
-                      Tickets{' '}
-                      <span className="text-[11px] text-slate-400">
-                        ({supportTicketsTotal})
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSupportTab('logs');
-                        setLogsPage(0);
-                      }}
-                      className={`px-3 py-1 rounded-md border text-xs transition-colors ${supportTab === 'logs'
-                        ? 'border-amber-400 text-amber-200 bg-amber-500/10'
-                        : 'border-slate-700 text-slate-200 hover:border-amber-400 hover:text-amber-200'
-                        }`}
-                    >
-                      Logs{' '}
-                      <span className="text-[11px] text-slate-400">
-                        ({logsTotal})
-                      </span>
-                    </button>
-                  </div>
-
-                  {supportTab === 'tickets' ? (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <select
-                        value={supportStatus}
-                        aria-label="Filtrer les tickets par statut"
-                        onChange={(e) => {
-                          setSupportStatus(e.target.value);
-                          setSupportPage(0);
-                        }}
-                        className="rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
-                      >
-                        <option value="OPEN">OPEN</option>
-                        <option value="CLOSED">CLOSED</option>
-                        <option value="">ALL</option>
-                      </select>
-                      {supportStatus !== 'OPEN' ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSupportStatus('OPEN');
-                            setSupportPage(0);
-                          }}
-                          className="px-3 py-2 rounded-lg border border-amber-500/50 text-amber-200 hover:bg-amber-500/10 transition-colors text-xs"
-                        >
-                          OPEN only
-                        </button>
-                      ) : null}
-                      <div className="flex items-center gap-2">
-                        <input
-                          list="support-category-list"
-                          value={supportCategory}
-                          aria-label="Filtrer les tickets par catégorie"
-                          onChange={(e) => {
-                            setSupportCategory(e.target.value);
-                            setSupportPage(0);
-                          }}
-                          placeholder="Catégorie"
-                          className="w-40 rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
-                        />
-                        <datalist id="support-category-list">
-                          {supportCategoryOptions.map((cat) => (
-                            <option key={`support-cat-${cat}`} value={cat} />
-                          ))}
-                        </datalist>
-                      </div>
-                      <input
-                        value={supportSearch}
-                        aria-label="Rechercher un ticket"
-                        onChange={(e) => {
-                          setSupportSearch(e.target.value);
-                          setSupportPage(0);
-                        }}
-                        placeholder="Rechercher ticket (email, pseudo, sujet...)"
-                        className="flex-1 min-w-0 md:flex-none md:w-72 rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
-                      />
-                      <select
-                        value={supportSortDir}
-                        aria-label="Trier les tickets"
-                        onChange={(e) => {
-                          setSupportSortDir(e.target.value);
-                          setSupportPage(0);
-                        }}
-                        className="rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
-                      >
-                        <option value="DESC">Récents</option>
-                        <option value="ASC">Anciens</option>
-                      </select>
-                      <select
-                        value={supportLimit}
-                        aria-label="Nombre de tickets par page"
-                        onChange={(e) => {
-                          setSupportLimit(Number(e.target.value));
-                          setSupportPage(0);
-                        }}
-                        className="rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
-                      >
-                        <option value={50}>50</option>
-                        <option value={100}>100</option>
-                        <option value={200}>200</option>
-                        <option value={500}>500</option>
-                      </select>
-                      <button
-                        type="button"
-                        onClick={refreshSupportTickets}
-                        aria-label="Rafraîchir les tickets"
-                        disabled={supportTicketsLoading}
-                        className="px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
-                      >
-                        {supportTicketsLoading ? '...' : 'Rafraîchir'}
-                      </button>
-                      <PaginationControls
-                        disabled={supportTicketsLoading || supportTicketsTotal <= 0}
-                        page={supportPage}
-                        maxPage={supportMaxPage}
-                        mode="range"
-                        from={supportFrom}
-                        to={supportTo}
-                        total={supportTicketsTotal}
-                        onPrev={() => setSupportPage((p) => Math.max(0, p - 1))}
-                        onNext={() =>
-                          setSupportPage((p) => Math.min(supportMaxPage, p + 1))
-                        }
-                        ariaPrev="Page précédente tickets"
-                        ariaNext="Page suivante tickets"
-                      />
-                    </div>
-                  ) : (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <input
-                        value={logsSearch}
-                        aria-label="Filtrer les logs (local)"
-                        onChange={(e) => setLogsSearch(e.target.value)}
-                        placeholder="Filtre local (description/table...)"
-                        className="flex-1 min-w-0 md:flex-none md:w-72 rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
-                      />
-                      <input
-                        value={logsActionType}
-                        aria-label="Filtrer logs par actionType"
-                        onChange={(e) => {
-                          setLogsActionType(e.target.value);
-                          setLogsPage(0);
-                          setLogsPrefetched(false);
-                        }}
-                        placeholder="actionType"
-                        className="w-32 rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
-                      />
-                      <input
-                        value={logsTargetTable}
-                        aria-label="Filtrer logs par targetTable"
-                        onChange={(e) => {
-                          setLogsTargetTable(e.target.value);
-                          setLogsPage(0);
-                          setLogsPrefetched(false);
-                        }}
-                        placeholder="targetTable"
-                        className="w-32 rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
-                      />
-                      <input
-                        value={logsUserId}
-                        aria-label="Filtrer logs par userId"
-                        onChange={(e) => {
-                          setLogsUserId(e.target.value);
-                          setLogsPage(0);
-                          setLogsPrefetched(false);
-                        }}
-                        placeholder="userId"
-                        className="w-24 rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
-                      />
-                      <select
-                        value={logsSortDir}
-                        aria-label="Trier les logs"
-                        onChange={(e) => {
-                          setLogsSortDir(e.target.value);
-                          setLogsPage(0);
-                        }}
-                        className="rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
-                      >
-                        <option value="DESC">Récents</option>
-                        <option value="ASC">Anciens</option>
-                      </select>
-                      <select
-                        value={logsLimit}
-                        aria-label="Nombre de logs par page"
-                        onChange={(e) => {
-                          setLogsLimit(Number(e.target.value));
-                          setLogsPage(0);
-                        }}
-                        className="rounded-lg bg-slate-950/60 border border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70"
-                      >
-                        <option value={50}>50</option>
-                        <option value={100}>100</option>
-                        <option value={200}>200</option>
-                        <option value={500}>500</option>
-                      </select>
-                      <button
-                        type="button"
-                        onClick={refreshAdminLogs}
-                        aria-label="Rafraichir les logs"
-                        disabled={logsLoading}
-                        className="px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
-                      >
-                        {logsLoading ? '...' : 'Rafraîchir'}
-                      </button>
-                      <PaginationControls
-                        disabled={logsLoading || logsTotal <= 0}
-                        page={logsPage}
-                        maxPage={logsMaxPage}
-                        mode="range"
-                        from={logsFrom}
-                        to={logsTo}
-                        total={logsTotal}
-                        onPrev={() => setLogsPage((p) => Math.max(0, p - 1))}
-                        onNext={() =>
-                          setLogsPage((p) => Math.min(logsMaxPage, p + 1))
-                        }
-                        ariaPrev="Page précédente logs"
-                        ariaNext="Page suivante logs"
-                      />
-
-                    </div>
-                  )}
-                </div>
-
-                {supportTab === 'tickets' ? (
+              <SupportPanel
+                supportTab={supportTab}
+                onTabChange={(tab) => {
+                  setSupportTab(tab);
+                  if (tab === 'tickets') {
+                    setSupportPage(0);
+                  } else {
+                    setLogsPage(0);
+                  }
+                }}
+                ticketsCount={supportTicketsTotal}
+                logsCount={logsTotal}
+                maintenance={
+                  <MaintenanceCard
+                    maintenanceLoading={maintenanceLoading}
+                    maintenanceSaving={maintenanceSaving}
+                    maintenanceMessage={maintenanceMessage}
+                    setMaintenanceMessage={setMaintenanceMessage}
+                    maintenanceRetryAfter={maintenanceRetryAfter}
+                    setMaintenanceRetryAfter={setMaintenanceRetryAfter}
+                    maintenanceEnabled={maintenanceEnabled}
+                    saveMaintenance={saveMaintenance}
+                  />
+                }
+                ticketsToolbar={
+                  <SupportToolbar
+                    supportStatus={supportStatus}
+                    setSupportStatus={(value) => {
+                      setSupportStatus(value);
+                      setSupportPage(0);
+                    }}
+                    supportCategory={supportCategory}
+                    setSupportCategory={(value) => {
+                      setSupportCategory(value);
+                      setSupportPage(0);
+                    }}
+                    supportCategoryOptions={supportCategoryOptions}
+                    supportSearch={supportSearch}
+                    setSupportSearch={(value) => {
+                      setSupportSearch(value);
+                      setSupportPage(0);
+                    }}
+                    supportSortDir={supportSortDir}
+                    setSupportSortDir={(value) => {
+                      setSupportSortDir(value);
+                      setSupportPage(0);
+                    }}
+                    supportLimit={supportLimit}
+                    setSupportLimit={(value) => {
+                      setSupportLimit(Number(value));
+                      setSupportPage(0);
+                    }}
+                    supportTicketsLoading={supportTicketsLoading}
+                    supportTicketsTotal={supportTicketsTotal}
+                    supportPage={supportPage}
+                    supportMaxPage={supportMaxPage}
+                    supportFrom={supportFrom}
+                    supportTo={supportTo}
+                    setSupportPage={setSupportPage}
+                    refreshSupportTickets={refreshSupportTickets}
+                  />
+                }
+                logsToolbar={
+                  <LogsToolbar
+                    logsSearch={logsSearch}
+                    setLogsSearch={setLogsSearch}
+                    logsActionType={logsActionType}
+                    setLogsActionType={(value) => {
+                      setLogsActionType(value);
+                      setLogsPage(0);
+                      setLogsPrefetched(false);
+                    }}
+                    logsTargetTable={logsTargetTable}
+                    setLogsTargetTable={(value) => {
+                      setLogsTargetTable(value);
+                      setLogsPage(0);
+                      setLogsPrefetched(false);
+                    }}
+                    logsUserId={logsUserId}
+                    setLogsUserId={(value) => {
+                      setLogsUserId(value);
+                      setLogsPage(0);
+                      setLogsPrefetched(false);
+                    }}
+                    logsSortDir={logsSortDir}
+                    setLogsSortDir={(value) => {
+                      setLogsSortDir(value);
+                      setLogsPage(0);
+                    }}
+                    logsLimit={logsLimit}
+                    setLogsLimit={(value) => {
+                      setLogsLimit(Number(value));
+                      setLogsPage(0);
+                    }}
+                    logsLoading={logsLoading}
+                    logsTotal={logsTotal}
+                    logsPage={logsPage}
+                    logsMaxPage={logsMaxPage}
+                    logsFrom={logsFrom}
+                    logsTo={logsTo}
+                    setLogsPage={setLogsPage}
+                    refreshAdminLogs={refreshAdminLogs}
+                  />
+                }
+                ticketsContent={
                   <div className="grid gap-4 lg:grid-cols-2">
                     <div
-                      className={`min-w-0 rounded-xl border border-slate-800/70 bg-slate-950/40 p-3 ${selectedTicketId ? 'hidden lg:block' : ''
-                        }`}
+                      className={`min-w-0 rounded-xl border border-slate-800/70 bg-slate-950/40 p-3 ${
+                        selectedTicketId ? 'hidden lg:block' : ''
+                      }`}
                     >
-                      {supportTicketsLoading ? (
-                        <div className="space-y-3" aria-busy="true">
-                          <div className="md:hidden">
-                            <SkeletonCards items={6} />
-                          </div>
-                          <div className="hidden md:block">
-                            <SkeletonTable rows={8} cols={5} titleWidth="w-28" />
-                          </div>
-                        </div>
-                      ) : supportTickets.length === 0 ? (
-                        <p className="text-sm text-slate-300">Aucun ticket.</p>
-                      ) : (
-                        <>
-                          <div className="md:hidden space-y-2">
-                            {supportTickets.map((t) => {
-                              const selected =
-                                Number(selectedTicketId) === Number(t.id);
-                              return (
-                                <button
-                                  key={`ticket-card-${t.id}`}
-                                  type="button"
-                                  onClick={() => setSelectedTicketId(t.id)}
-                                  className={`w-full text-left rounded-lg border p-3 transition-colors ${selected
-                                    ? 'border-amber-400/50 bg-amber-500/10'
-                                    : 'border-slate-800/70 bg-slate-950/30 hover:bg-slate-900/40'
-                                    } focus:outline-none focus-visible:ring focus-visible:ring-amber-400/70`}
-                                >
-                                  <div className="flex items-start justify-between gap-3">
-                                    <p className="text-[11px] text-amber-300 font-mono">
-                                      #{t.id}
-                                    </p>
-                                    <p className="text-[11px] text-slate-300">
-                                      {t.created_at
-                                        ? new Date(t.created_at).toLocaleString('fr-FR')
-                                        : '-'}
-                                    </p>
-                                  </div>
-
-                                  <p className="mt-1 text-sm text-slate-100 font-semibold">
-                                    {t.subject || t.category || '(sans sujet)'}
-                                  </p>
-                                  <p className="mt-1 text-[11px] text-slate-300">
-                                    {t.username || t.email || '-'}
-                                  </p>
-
-                                  <div className="mt-2 flex items-center justify-between gap-2">
-                                    <p className="text-[11px] text-slate-400 flex items-center gap-2">
-                                      <span>Status:</span> <StatusBadge status={t.status} />
-                                    </p>
-                                    <p className="text-[11px] text-slate-500 truncate">
-                                      {t.category || ''}
-                                    </p>
-                                  </div>
-                                </button>
-                              );
-                            })}
-                          </div>
-
-                          <TableShell className="hidden md:block" asChild>
-                            <table className="w-full text-left text-xs">
-                              <thead className="text-[11px] uppercase tracking-widest text-slate-400">
-                                <tr className="border-b border-slate-800/70">
-                                  <th className="py-2 pr-3">ID</th>
-                                  <th className="py-2 pr-3">Status</th>
-                                  <th className="py-2 pr-3">User</th>
-                                  <th className="py-2 pr-3">Sujet</th>
-                                  <th className="py-2">Date</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {supportTickets.map((t) => {
-                                  const selected =
-                                    Number(selectedTicketId) === Number(t.id);
-                                  return (
-                                    <tr
-                                      key={`ticket-${t.id}`}
-                                      role="button"
-                                      tabIndex={0}
-                                      aria-label={`Ouvrir le ticket #${t.id}`}
-                                      aria-selected={selected}
-                                      className={`border-b border-slate-800/60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${selected
-                                        ? 'bg-amber-500/10'
-                                        : 'hover:bg-slate-900/40'
-                                        }`}
-                                      onClick={() => setSelectedTicketId(t.id)}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                          e.preventDefault();
-                                          setSelectedTicketId(t.id);
-                                        }
-                                      }}
-                                    >
-                                      <td className="py-2 pr-3 font-mono text-amber-300">
-                                        {t.id}
-                                      </td>
-                                      <td className="py-2 pr-3 text-slate-200">
-                                        <StatusBadge status={t.status} />
-                                      </td>
-                                      <td className="py-2 pr-3 text-slate-300">
-                                        {t.username || t.email || '-'}
-                                      </td>
-                                      <td className="py-2 pr-3 text-slate-300">
-                                        <span className="block max-w-[240px] truncate">
-                                          {t.subject || t.category || '-'}
-                                        </span>
-                                      </td>
-                                      <td className="py-2 text-slate-400">
-                                        {t.created_at
-                                          ? new Date(t.created_at).toLocaleString(
-                                            'fr-FR'
-                                          )
-                                          : '-'}
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
-                          </TableShell>
-                        </>
-                      )}
+                      <TicketsList
+                        supportTickets={supportTickets}
+                        supportTicketsLoading={supportTicketsLoading}
+                        selectedTicketId={selectedTicketId}
+                        onSelectTicket={(ticket) => setSelectedTicketId(ticket.id)}
+                      />
                     </div>
-
                     <div
-                      className={`min-w-0 rounded-xl border border-slate-800/70 bg-slate-950/40 p-3 space-y-3 ${selectedTicketId ? '' : 'hidden lg:block'
-                        }`}
+                      className={`min-w-0 rounded-xl border border-slate-800/70 bg-slate-950/40 p-3 space-y-3 ${
+                        selectedTicketId ? '' : 'hidden lg:block'
+                      }`}
                     >
-                      {selectedTicketId ? (
-                        <button
-                          type="button"
-                          onClick={() => setSelectedTicketId(null)}
-                          className="lg:hidden px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
-                        >
-                          {'<'} Retour
-                        </button>
-                      ) : null}
-                      <p className="text-xs text-slate-300">Détail du ticket</p>
-                      {selectedTicket ? (
-                        <>
-                          <div className="text-sm text-slate-100">
-                            <p className="font-semibold flex flex-wrap items-center gap-2">
-                              <span className="font-mono text-amber-300">
-                                #{selectedTicket.id}
-                              </span>
-                              <StatusBadge status={selectedTicket.status} />
-                            </p>
-
-
-                            <p className="text-xs text-slate-400 mt-1">
-                              {selectedTicket.username || '-'} ·{' '}
-                              {selectedTicket.email || '-'}
-                            </p>
-                            <div className="mt-2 flex flex-wrap items-center gap-2">
-                              <ActionMenu
-                                ariaLabel="Actions rapides ticket"
-                                triggerLabel="Copier"
-                                items={[
-                                  {
-                                    key: 'copy-id',
-                                    label: `Copier ID (#${selectedTicket.id})`,
-                                    onClick: () => copyWithToast(selectedTicket.id, 'ID'),
-                                  },
-                                  {
-                                    key: 'copy-email',
-                                    label: 'Copier email',
-                                    disabled: !normalizeText(selectedTicket.email),
-                                    onClick: () => copyWithToast(selectedTicket.email, 'Email'),
-                                  },
-                                  {
-                                    key: 'copy-ip',
-                                    label: 'Copier IP',
-                                    disabled: !normalizeText(selectedTicket.ip_address),
-                                    onClick: () => copyWithToast(selectedTicket.ip_address, 'IP'),
-                                  },
-                                  {
-                                    key: 'copy-ua',
-                                    label: 'Copier User-Agent',
-                                    disabled: !normalizeText(selectedTicket.user_agent),
-                                    onClick: () =>
-                                      copyWithToast(selectedTicket.user_agent, 'User-Agent'),
-                                  },
-                                  {
-                                    key: 'copy-page',
-                                    label: 'Copier URL page',
-                                    disabled: !normalizeText(selectedTicket.page_url),
-                                    onClick: () => copyWithToast(selectedTicket.page_url, 'URL page'),
-                                  },
-                                  {
-                                    key: 'open-page',
-                                    label: 'Ouvrir page',
-                                    disabled: !normalizeText(selectedTicket.page_url),
-                                    onClick: () => {
-                                      if (!normalizeText(selectedTicket.page_url)) return;
-                                      window.open(
-                                        selectedTicket.page_url,
-                                        '_blank',
-                                        'noopener,noreferrer'
-                                      );
-                                    },
-                                  },
-                                ]}
-                              />
-                              {selectedTicket.page_url ? (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    window.open(
-                                      selectedTicket.page_url,
-                                      '_blank',
-                                      'noopener,noreferrer'
-                                    )
-                                  }
-                                  className="px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
-                                >
-                                  Ouvrir page
-                                </button>
-                              ) : null}
-                            </div>
-                          </div>
-
-                          <div className="rounded-lg border border-slate-800/70 bg-black/20 p-3 space-y-2">
-                            <p className="text-xs text-slate-300 font-semibold">
-                              Infos techniques
-                            </p>
-                            <dl className="grid gap-2 sm:grid-cols-2 text-[11px] text-slate-300">
-                              <div>
-                                <dt className="uppercase tracking-widest text-slate-500">
-                                  Catégorie
-                                </dt>
-                                <dd className="mt-0.5 text-slate-200">
-                                  {selectedTicket.category || '-'}
-                                </dd>
-                              </div>
-
-                              <div>
-                                <dt className="uppercase tracking-widest text-slate-500">
-                                  Date serveur
-                                </dt>
-                                <dd className="mt-0.5 text-slate-200 font-mono">
-                                  {selectedTicket.created_at
-                                    ? new Date(selectedTicket.created_at).toLocaleString(
-                                      'fr-FR'
-                                    )
-                                    : '-'}
-                                </dd>
-                              </div>
-
-                              <div>
-                                <dt className="uppercase tracking-widest text-slate-500">
-                                  IP
-                                </dt>
-                                <dd className="mt-0.5 text-slate-200 font-mono">
-                                  {selectedTicket.ip_address || '-'}
-                                </dd>
-                              </div>
-
-                              <div>
-                                <dt className="uppercase tracking-widest text-slate-500">
-                                  Heure client
-                                </dt>
-                                <dd
-                                  className="mt-0.5 text-slate-200 font-mono"
-                                  title={selectedTicket.client_time_iso || ''}
-                                >
-                                  {selectedTicket.client_time_iso
-                                    ? new Date(
-                                      selectedTicket.client_time_iso
-                                    ).toLocaleString('fr-FR')
-                                    : '-'}
-                                </dd>
-                              </div>
-
-                              <div className="sm:col-span-2">
-                                <dt className="uppercase tracking-widest text-slate-500">
-                                  Page
-                                </dt>
-                                <dd className="mt-0.5 text-slate-200 break-all">
-                                  {selectedTicket.page_url ? (
-                                    <div className="flex items-start justify-between gap-2">
-                                      <a
-                                        href={selectedTicket.page_url}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="text-amber-200 hover:text-amber-100 underline underline-offset-2 break-all"
-                                        title={selectedTicket.page_url}
-                                      >
-                                        {selectedTicket.page_url}
-                                      </a>
-                                      <div className="shrink-0 flex items-center gap-2">
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            window.open(
-                                              selectedTicket.page_url,
-                                              '_blank',
-                                              'noopener,noreferrer'
-                                            )
-                                          }
-                                          className="px-2 py-1 rounded-md border border-slate-700 text-[11px] text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
-                                        >
-                                          Ouvrir
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            copyWithToast(selectedTicket.page_url, 'URL page')
-                                          }
-                                          className="px-2 py-1 rounded-md border border-slate-700 text-[11px] text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
-                                        >
-                                          Copier
-                                        </button>
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    '-'
-                                  )}
-                                </dd>
-                              </div>
-
-                              <div className="sm:col-span-2">
-                                <KeyValueRow
-                                  label="User-Agent"
-                                  value={selectedTicket.user_agent || '-'}
-                                  mono
-                                  actions={
-                                    <CopyButton
-                                      value={selectedTicket.user_agent}
-                                      label="Copier UA"
-                                      ariaLabel="Copier User-Agent"
-                                      disabled={!normalizeText(selectedTicket.user_agent)}
-                                      className="px-2 py-1 rounded-md text-[11px]"
-                                      onCopied={(ok) =>
-                                        setToast(
-                                          ok
-                                            ? {
-                                              type: 'success',
-                                              message: 'User-Agent copié.',
-                                            }
-                                            : {
-                                              type: 'error',
-                                              message:
-                                                'Impossible de copier User-Agent.',
-                                            }
-                                        )
-                                      }
-                                    />
-                                  }
-                                />
-                              </div>
-
-
-                            </dl>
-
-                            {selectedTicket.client_meta ? (
-                              <A11yDetails
-                                className="pt-1"
-                                summary="Client meta"
-                                summaryClassName="list-none [&::-webkit-details-marker]:hidden cursor-pointer text-[11px] text-slate-300 hover:text-slate-200"
-                              >
-                                <pre className="mt-2 whitespace-pre-wrap text-[11px] text-slate-200 font-mono rounded-md border border-slate-800/70 bg-slate-950/40 p-2 max-h-48 overflow-y-auto">
-                                  {typeof selectedTicket.client_meta === 'string'
-                                    ? selectedTicket.client_meta
-                                    : JSON.stringify(
-                                      selectedTicket.client_meta,
-                                      null,
-                                      2
-                                    )}
-                                </pre>
-                              </A11yDetails>
-                            ) : null}
-                          </div>
-
-                          <div className="rounded-lg border border-slate-800/70 bg-black/20 p-3">
-                            <p className="text-xs text-slate-300 mb-2">
-                              {selectedTicket.subject || '(sans sujet)'}
-                            </p>
-                            <pre className="whitespace-pre-wrap text-xs text-slate-200 font-mono">
-                              {selectedTicket.message || ''}
-                            </pre>
-                          </div>
-
-                          <div className="flex flex-wrap gap-2 justify-end">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleTicketStatus(selectedTicket.id, 'OPEN')
-                              }
-                              className="px-3 py-2 rounded-lg border border-slate-700 text-xs text-slate-200 hover:border-amber-400 hover:text-amber-200 transition-colors"
-                            >
-                              Réouvrir
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleTicketStatus(selectedTicket.id, 'CLOSED')
-                              }
-                              className="px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-xs text-slate-900 font-semibold transition-colors"
-                            >
-                              Clore
-                            </button>
-                          </div>
-                        </>
-                      ) : (
-                        <p className="text-sm text-slate-300">
-                          Sélectionne un ticket.
-                        </p>
-                      )}
+                      <TicketDetail
+                        selectedTicketId={selectedTicketId}
+                        selectedTicket={selectedTicket}
+                        onBack={() => setSelectedTicketId(null)}
+                        normalizeText={normalizeText}
+                        copyWithToast={copyWithToast}
+                        setToast={setToast}
+                        handleTicketStatus={handleTicketStatus}
+                      />
                     </div>
                   </div>
-                ) : (
+                }
+                logsContent={
                   <div className="rounded-xl border border-slate-800/70 bg-slate-950/40 p-3">
-                    {logsLoading ? (
-                      <div className="space-y-3" aria-busy="true">
-                        <div className="md:hidden">
-                          <SkeletonCards items={6} />
-                        </div>
-                        <div className="hidden md:block">
-                          <SkeletonTable rows={10} cols={6} titleWidth="w-24" />
-                        </div>
-                      </div>
-                    ) : filteredLogs.length === 0 ? (
-                      <p className="text-sm text-slate-300">Aucun log.</p>
-                    ) : (
-                      <>
-                        <div className="md:hidden space-y-2">
-                          {filteredLogs.map((l) => (
-                            <div
-                              key={`log-card-${l.id}`}
-                              className="rounded-lg border border-slate-800/70 bg-slate-950/30 p-3"
-                            >
-                              <div className="flex items-start justify-between gap-3">
-                                <p className="text-[11px] text-slate-400 font-mono">
-                                  {l.created_at
-                                    ? new Date(l.created_at).toLocaleString('fr-FR')
-                                    : '-'}
-                                </p>
-                                <p className="text-[11px] text-slate-300 font-mono">
-                                  user:{' '}
-                                  <span className="text-slate-200">
-                                    {l.user_id ?? '-'}
-                                  </span>
-                                </p>
-                              </div>
-
-                              <p className="mt-1 text-sm text-slate-100 font-semibold">
-                                {l.action_type || '-'}
-                              </p>
-                              <p className="mt-0.5 text-[11px] text-slate-300">
-                                {l.target_table || '-'}{' '}
-                                <span className="text-slate-500 font-mono">
-                                  #{l.target_id ?? '-'}
-                                </span>
-                              </p>
-
-                              {l.description ? (
-                                <p className="mt-2 text-[11px] text-slate-200 whitespace-pre-wrap">
-                                  {l.description}
-                                </p>
-                              ) : (
-                                <p className="mt-2 text-[11px] text-slate-400">-</p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-
-                        <TableShell className="hidden md:block" asChild>
-                          <table className="min-w-[900px] w-full text-left text-xs">
-                            <thead className="text-[11px] uppercase tracking-widest text-slate-400">
-                              <tr className="border-b border-slate-800/70">
-                                <th className="py-2 pr-3">Date</th>
-                                <th className="py-2 pr-3">User</th>
-                                <th className="py-2 pr-3">Type</th>
-                                <th className="py-2 pr-3">Table</th>
-                                <th className="py-2 pr-3">Target</th>
-                                <th className="py-2">Description</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {filteredLogs.map((l) => (
-                                <tr
-                                  key={`log-${l.id}`}
-                                  className="border-b border-slate-800/60"
-                                >
-                                  <td className="py-2 pr-3 text-slate-400">
-                                    {l.created_at
-                                      ? new Date(l.created_at).toLocaleString(
-                                        'fr-FR'
-                                      )
-                                      : '-'}
-                                  </td>
-                                  <td className="py-2 pr-3 text-slate-300 font-mono">
-                                    {l.user_id ?? '-'}
-                                  </td>
-                                  <td className="py-2 pr-3 text-slate-200">
-                                    {l.action_type || '-'}
-                                  </td>
-                                  <td className="py-2 pr-3 text-slate-300">
-                                    {l.target_table || '-'}
-                                  </td>
-                                  <td className="py-2 pr-3 text-slate-300 font-mono">
-                                    {l.target_id ?? '-'}
-                                  </td>
-                                  <td className="py-2 text-slate-300">
-                                    {l.description || '-'}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </TableShell>
-                      </>
-                    )}
+                    <LogsList logsLoading={logsLoading} filteredLogs={filteredLogs} />
                   </div>
-                )}
-              </div>
+                }
+              />
             ) : activeTab === 'endgame' ? (
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -3797,6 +3098,9 @@ function AdminPage() {
 }
 
 export default AdminPage;
+
+
+
 
 
 
