@@ -26,7 +26,67 @@ export default function BalanceRowTable({
 
   return (
     <TableShell className="hidden md:block" asChild>
-      <table className="min-w-[900px] w-full text-left text-xs">
+      <table className="min-w-[1100px] w-full text-left text-xs">
+        <colgroup>
+          <col className="w-24" />
+          {activeTab === 'realms' && (
+            <>
+              <col className="w-32" />
+              <col className="w-40" />
+              <col />
+              <col className="w-48" />
+              <col className="w-24" />
+              <col className="w-40" />
+            </>
+          )}
+          {activeTab === 'realm_unlock_costs' && (
+            <>
+              <col className="w-40" />
+              <col className="w-40" />
+              <col className="w-32" />
+              <col className="w-40" />
+            </>
+          )}
+          {activeTab === 'resources' && (
+            <>
+              <col className="w-28" />
+              <col className="w-32" />
+              <col className="w-40" />
+              <col />
+              <col className="w-40" />
+            </>
+          )}
+          {activeTab === 'factories' && (
+            <>
+              <col className="w-28" />
+              <col className="w-32" />
+              <col className="w-28" />
+              <col className="w-32" />
+              <col className="w-40" />
+              <col className="w-32" />
+              <col className="w-32" />
+              <col className="w-28" />
+              <col className="w-24" />
+              <col className="w-40" />
+            </>
+          )}
+          {activeTab === 'skills' && (
+            <>
+              <col className="w-28" />
+              <col className="w-32" />
+              <col className="w-32" />
+              <col className="w-40" />
+              <col className="w-28" />
+              <col className="w-28" />
+              <col className="w-28" />
+              <col className="w-40" />
+              <col className="w-32" />
+              <col className="w-28" />
+              <col className="w-28" />
+              <col className="w-40" />
+            </>
+          )}
+        </colgroup>
         <thead className="text-[11px] uppercase tracking-widest text-slate-400">
           <tr className="border-b border-amber-500/20">
             {activeTab === 'realms' && (
@@ -125,7 +185,9 @@ export default function BalanceRowTable({
             if (activeTab === 'realms') {
               return (
                 <tr key={`realms-${row.id}`} className="border-b border-slate-800/60">
-                  <td className="py-2 pr-3 font-mono text-amber-300">{row.id}</td>
+                  <td className="py-2 pr-3 font-mono text-amber-300 text-right">
+                    {row.id}
+                  </td>
                   <td className="py-2 pr-3">
                     <input
                       className={inputClass}
@@ -181,7 +243,9 @@ export default function BalanceRowTable({
                   key={`realm_unlock_costs-${row.id}`}
                   className="border-b border-slate-800/60"
                 >
-                  <td className="py-2 pr-3 font-mono text-amber-300">{row.id}</td>
+                  <td className="py-2 pr-3 font-mono text-amber-300 text-right">
+                    {row.id}
+                  </td>
                   <td className="py-2 pr-3">
                     <select
                       className={inputClass}
@@ -237,7 +301,9 @@ export default function BalanceRowTable({
             if (activeTab === 'resources') {
               return (
                 <tr key={`resources-${row.id}`} className="border-b border-slate-800/60">
-                  <td className="py-2 pr-3 font-mono text-amber-300">{row.id}</td>
+                  <td className="py-2 pr-3 font-mono text-amber-300 text-right">
+                    {row.id}
+                  </td>
                   <td className="py-2 pr-3">
                     <input
                       className={inputClass}
@@ -279,7 +345,9 @@ export default function BalanceRowTable({
             if (activeTab === 'factories') {
               return (
                 <tr key={`factories-${row.id}`} className="border-b border-slate-800/60">
-                  <td className="py-2 pr-3 font-mono text-amber-300">{row.id}</td>
+                  <td className="py-2 pr-3 font-mono text-amber-300 text-right">
+                    {row.id}
+                  </td>
                   <td className="py-2 pr-3">
                     <select
                       className={inputClass}
@@ -374,7 +442,9 @@ export default function BalanceRowTable({
 
             return (
               <tr key={`skills-${row.id}`} className="border-b border-slate-800/60">
-                <td className="py-2 pr-3 font-mono text-amber-300">{row.id}</td>
+                <td className="py-2 pr-3 font-mono text-amber-300 text-right">
+                  {row.id}
+                </td>
                 <td className="py-2 pr-3">
                   <select
                     className={inputClass}

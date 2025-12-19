@@ -88,7 +88,7 @@ export default function TicketsList({
               </p>
 
               <div className="mt-2 flex items-center justify-between gap-2">
-                <p className="text-[11px] text-slate-400 flex items-center gap-2">
+                <p className="text-xs text-slate-400 flex items-center gap-2">
                   <span>Status:</span> <StatusBadge status={ticket.status} />
                 </p>
                 <p className="text-[11px] text-slate-500 truncate">

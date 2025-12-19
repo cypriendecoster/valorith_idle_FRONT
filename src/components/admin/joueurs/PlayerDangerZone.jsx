@@ -23,25 +23,33 @@ export default function PlayerDangerZone({
         >
           Actions irreversibles. Utiliser uniquement si necessaire.
         </p>
-        <div className="flex flex-wrap gap-2 justify-end">
-        <button
-          type="button"
-          disabled={playerDangerLoading}
-          onClick={onReset}
-          aria-describedby="player-danger-help"
-          className="px-3 py-1 rounded-md border border-amber-500/50 text-amber-200 hover:bg-amber-500/10 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-        >
-          Reset progression
-        </button>
-        <button
-          type="button"
-          disabled={playerDangerLoading}
-          onClick={onDelete}
-          aria-describedby="player-danger-help"
-          className="px-3 py-1 rounded-md border border-red-500/50 text-red-200 hover:bg-red-900/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-        >
-          Supprimer compte
-        </button>
+        <div className="rounded-lg border border-red-500/30 bg-red-950/20 p-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-[11px] uppercase tracking-widest text-red-300">
+              Zone critique
+            </p>
+            <span className="h-px flex-1 bg-red-500/20" aria-hidden="true" />
+          </div>
+          <div className="flex flex-wrap gap-2 justify-end mt-2">
+            <button
+              type="button"
+              disabled={playerDangerLoading}
+              onClick={onReset}
+              aria-describedby="player-danger-help"
+              className="px-3 py-1 rounded-md border border-amber-500/50 text-amber-200 hover:bg-amber-500/10 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              Reset progression
+            </button>
+            <button
+              type="button"
+              disabled={playerDangerLoading}
+              onClick={onDelete}
+              aria-describedby="player-danger-help"
+              className="px-3 py-1 rounded-md border border-red-500/50 text-red-200 hover:bg-red-900/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              Supprimer compte
+            </button>
+          </div>
         </div>
       </div>
     </A11yDetailsWrap>

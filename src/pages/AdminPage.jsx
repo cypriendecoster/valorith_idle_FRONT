@@ -15,6 +15,7 @@ import useSupportState from '../hooks/admin/useSupportState.jsx';
 import useEndgameState from '../hooks/admin/useEndgameState.jsx';
 import AdminToolbar from '../components/admin/layout/AdminToolbar';
 import AdminSectionTitle from '../components/admin/layout/AdminSectionTitle';
+import SectionHeader from '../components/ui/SectionHeader';
 import InfoBanner from '../components/ui/InfoBanner';
 import { adminService } from '../services/AdminService';
 import { authService } from '../services/AuthService';
@@ -2276,6 +2277,13 @@ function AdminPage() {
     Math.ceil(Math.max(0, logsTotal) / Math.max(1, logsLimit)) - 1
   );
 
+  const sectionMeta = {
+    balance: { label: 'Balance', icon: 'B', tone: 'amber' },
+    players: { label: 'Joueurs', icon: 'P', tone: 'emerald' },
+    support: { label: 'Support & Logs', icon: 'S', tone: 'sky' },
+    endgame: { label: 'Endgame', icon: 'E', tone: 'rose' },
+  }[activeMainTab] || { label: 'Section', icon: '*', tone: 'amber' };
+
   const { listProps: playersListProps, detailsProps: playersDetailsProps } = usePlayersState({
     players,
     playersLoading,
@@ -2508,10 +2516,16 @@ function AdminPage() {
                 }
               }}
               resetAriaLabel="Reinitialiser la recherche"
+              compactOnMobile={isBalanceTab}
             />
           </div>
 
           <div className="border-t border-slate-800/70 pt-4">
+            <SectionHeader
+              label={sectionMeta.label}
+              icon={sectionMeta.icon}
+              tone={sectionMeta.tone}
+            />
             <AdminSectionTitle>{title}</AdminSectionTitle>
 
             {dirtyInfo.rows > 0 ? (

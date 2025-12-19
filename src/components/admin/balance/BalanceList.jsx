@@ -4,6 +4,7 @@ import BalanceRowTable from './BalanceRowTable';
 import SkeletonCards from '../../ui/SkeletonCards';
 import SkeletonTable from '../../ui/SkeletonTable';
 import A11yDetailsWrap from '../../ui/A11yDetailsWrap';
+import InfoBanner from '../../ui/InfoBanner';
 
 export default function BalanceList({
   activeTab,
@@ -336,11 +337,9 @@ export default function BalanceList({
           </div>
         </div>
         {importMessage ? (
-          <p className="text-[11px] text-emerald-200">{importMessage}</p>
+          <InfoBanner tone="success">{importMessage}</InfoBanner>
         ) : null}
-        {importError ? (
-          <p className="text-[11px] text-red-200">{importError}</p>
-        ) : null}
+        {importError ? <InfoBanner tone="danger">{importError}</InfoBanner> : null}
         {batchDiffs.length > 0 ? (
           <A11yDetailsWrap summaryClassName="list-none [&::-webkit-details-marker]:hidden cursor-pointer text-[11px] text-slate-300 hover:text-slate-200">
             <summary className="list-none [&::-webkit-details-marker]:hidden cursor-pointer text-[11px] text-slate-300 hover:text-slate-200">

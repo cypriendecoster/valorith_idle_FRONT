@@ -57,7 +57,7 @@ export default function BalanceRowCard({
             </p>
             <p className="text-[11px] text-slate-500 font-mono mt-0.5">#{row.id}</p>
           </div>
-          <p className="text-[11px] text-slate-400 mt-0.5">Ouvrir</p>
+          <p className="text-xs text-slate-400 mt-0.5">Ouvrir</p>
         </div>
       </summary>
 
