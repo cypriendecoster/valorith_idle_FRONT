@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { adminService } from '../../services/AdminService';
 import {
   normalizeText,
@@ -6,6 +6,7 @@ import {
   toBooleanInt,
 } from '../../utils/adminFormatters';
 import { applyOptimisticRowUpdate } from './balanceHelpers';
+import useBalanceEdits from './useBalanceEdits';
 import {
   mergedRow as mergedRowUtil,
   getRowDiffs as getRowDiffsUtil,
@@ -35,35 +36,14 @@ export default function useBalanceState({
   setToast,
   openConfirm,
 }) {
-  const [edits, setEdits] = useState({});
-  const [saving, setSaving] = useState({});
-
-  const updateField = (type, id, field, value) => {
-    const key = `${type}:${id}`;
-    setEdits((prev) => ({
-      ...prev,
-      [key]: {
-        ...(prev[key] || {}),
-        [field]: value,
-      },
-    }));
-  };
-
-  const isRowSaving = (type, id) => !!saving[`${type}:${id}`];
-
-  const setRowSaving = (type, id, value) => {
-    const key = `${type}:${id}`;
-    setSaving((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const clearRowEdits = (type, id) => {
-    const key = `${type}:${id}`;
-    setEdits((prev) => {
-      const next = { ...prev };
-      delete next[key];
-      return next;
-    });
-  };
+  const {
+    edits,
+    saving,
+    updateField,
+    isRowSaving,
+    setRowSaving,
+    clearRowEdits,
+  } = useBalanceEdits();
 
   const mergedRow = (type, row) => mergedRowUtil(type, row, edits);
 
