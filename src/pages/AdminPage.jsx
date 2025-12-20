@@ -5,8 +5,7 @@ import ConfirmModal from '../components/ui/ConfirmModal';
 import AdminHeader from '../components/admin/layout/AdminHeader';
 import AdminTabs from '../components/admin/layout/AdminTabs';
 import BalanceSubTabs from '../components/admin/layout/BalanceSubTabs';
-import CreateBalanceForm from '../components/admin/balance/CreateBalanceForm';
-import BalanceList from '../components/admin/balance/BalanceList';
+import AdminBalanceSection from '../components/admin/sections/AdminBalanceSection';
 import AdminPlayersSection from '../components/admin/sections/AdminPlayersSection';
 import AdminSupportSection from '../components/admin/sections/AdminSupportSection';
 import AdminEndgameSection from '../components/admin/sections/AdminEndgameSection';
@@ -2335,22 +2334,6 @@ const matchesSearch = (row) => matchesSearchUtil(row, search);
               </InfoBanner>
             ) : null}
 
-            <CreateBalanceForm
-              open={createOpen && isBalanceTab}
-              title={title}
-              activeTab={activeTab}
-              createDraft={createDraft}
-              setCreateDraft={setCreateDraft}
-              inputClass={inputClass}
-              realms={realms}
-              resources={resources}
-              sortedRealms={sortedRealms}
-              sortedResources={sortedResources}
-              createSaving={createSaving}
-              onCreate={handleCreate}
-              onCancel={() => setCreateOpen(false)}
-            />
-
             {activeTab === 'players' ? (
               <AdminPlayersSection
                 selectedPlayerId={selectedPlayerId}
@@ -2360,16 +2343,11 @@ const matchesSearch = (row) => matchesSearchUtil(row, search);
             ) : activeTab === 'support' ? (
               <AdminSupportSection
                 supportTab={supportTab}
-                onTabChange={(tab) => {
-                  setSupportTab(tab);
-                  setSelectedTicketId(null);
-                  setSelectedTicketIds([]);
-                  if (tab === 'tickets') {
-                    setSupportPage(0);
-                  } else {
-                    setLogsPage(0);
-                  }
-                }}
+                setSupportTab={setSupportTab}
+                setSelectedTicketId={setSelectedTicketId}
+                setSelectedTicketIds={setSelectedTicketIds}
+                setSupportPage={setSupportPage}
+                setLogsPage={setLogsPage}
                 ticketsCount={supportTicketsTotal}
                 logsCount={logsTotal}
                 maintenance={supportMaintenance}
@@ -2393,11 +2371,23 @@ const matchesSearch = (row) => matchesSearchUtil(row, search);
                 feedback={endgameFeedback}
               />
             ) : (
-              <BalanceList
+              <AdminBalanceSection
                 activeTab={activeTab}
+                isBalanceTab={isBalanceTab}
+                title={title}
+                createOpen={createOpen}
+                createDraft={createDraft}
+                setCreateDraft={setCreateDraft}
+                inputClass={inputClass}
+                realms={realms}
+                resources={resources}
+                sortedRealms={sortedRealms}
+                sortedResources={sortedResources}
+                createSaving={createSaving}
+                onCreate={handleCreate}
+                onCancelCreate={() => setCreateOpen(false)}
                 loading={loading}
                 visibleRows={visibleRows}
-                inputClass={inputClass}
                 mergedRow={mergedRow}
                 isRowSaving={isRowSaving}
                 getRowDiffs={getRowDiffs}
@@ -2405,10 +2395,6 @@ const matchesSearch = (row) => matchesSearchUtil(row, search);
                 requestDelete={requestDelete}
                 updateField={updateField}
                 realmUnlockCostsByRealmId={realmUnlockCostsByRealmId}
-                resources={resources}
-                realms={realms}
-                sortedRealms={sortedRealms}
-                sortedResources={sortedResources}
               />
             )}
           </div>
