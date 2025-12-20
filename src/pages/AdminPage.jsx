@@ -10,6 +10,7 @@ import AdminPlayersSection from '../components/admin/sections/AdminPlayersSectio
 import AdminSupportSection from '../components/admin/sections/AdminSupportSection';
 import AdminEndgameSection from '../components/admin/sections/AdminEndgameSection';
 import useBalanceState from '../hooks/admin/useBalanceState';
+import useConfirmModal from '../hooks/admin/useConfirmModal';
 import usePlayersState from '../hooks/admin/usePlayersState';
 import useSupportState from '../hooks/admin/useSupportState.jsx';
 import useEndgameState from '../hooks/admin/useEndgameState.jsx';
@@ -107,18 +108,6 @@ function AdminPage() {
   const [endgameLoading, setEndgameLoading] = useState(false);
   const [endgameFeedback, setEndgameFeedback] = useState('');
 
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [confirmTitle, setConfirmTitle] = useState('');
-  const [confirmMessage, setConfirmMessage] = useState('');
-  const [confirmDanger, setConfirmDanger] = useState(true);
-  const [confirmLabel, setConfirmLabel] = useState('Confirmer');
-  const [confirmExpectedText, setConfirmExpectedText] = useState('');
-  const [confirmInput, setConfirmInput] = useState('');
-  const [confirmLoading, setConfirmLoading] = useState(false);
-  const [confirmError, setConfirmError] = useState('');
-  const [confirmAction, setConfirmAction] = useState(null);
-  const [confirmDetails, setConfirmDetails] = useState(null);
-
   useAdminQuerySync({
     isAdmin,
     activeTab,
@@ -174,6 +163,8 @@ function AdminPage() {
     normalizeSortDir,
     clampInt,
   });
+
+  const { confirmProps, openConfirm } = useConfirmModal({ normalizeText });
 
   const {
     edits,
@@ -270,6 +261,44 @@ function AdminPage() {
     }
     return Array.from(set).sort((a, b) => a.localeCompare(b, 'fr-FR'));
   }, [supportTickets]);
+
+  const copyToClipboard = async (value) => {
+    const text = String(value ?? '');
+    if (!text) return false;
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch {
+      // fall back below
+    }
+
+    try {
+      const el = document.createElement('textarea');
+      el.value = text;
+      el.setAttribute('readonly', 'true');
+      el.style.position = 'fixed';
+      el.style.left = '-9999px';
+      el.style.top = '0';
+      document.body.appendChild(el);
+      el.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(el);
+      return ok;
+    } catch {
+      return false;
+    }
+  };
+
+  const copyWithToast = async (value, label = 'Valeur') => {
+    const ok = await copyToClipboard(value);
+    setToast(
+      ok
+        ? { type: 'success', message: `${label} copiee.` }
+        : { type: 'error', message: `Impossible de copier ${label}.` }
+    );
+  };
 
   useEffect(() => {
     if (!toast) return;
@@ -776,109 +805,6 @@ function AdminPage() {
     }
   }, [activeTab]);
 
-  useEffect(() => {
-    if (!confirmOpen) return;
-    setConfirmInput('');
-    setConfirmError('');
-    setConfirmLoading(false);
-  }, [confirmOpen]);
-
-  function openConfirm({
-    title,
-    message,
-    confirmLabel: nextConfirmLabel = 'Confirmer',
-    danger = true,
-    expectedText = '',
-    details = null,
-    action,
-  }) {
-    setConfirmTitle(title || 'Confirmation');
-    setConfirmMessage(message || '');
-    setConfirmLabel(nextConfirmLabel);
-    setConfirmDanger(danger);
-    setConfirmExpectedText(expectedText);
-    setConfirmDetails(details);
-    setConfirmAction(() => action);
-    setConfirmOpen(true);
-  }
-
-  const copyToClipboard = async (value) => {
-    const text = String(value ?? '');
-    if (!text) return false;
-    try {
-      if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-        return true;
-      }
-    } catch {
-      // fall back below
-    }
-
-    try {
-      const el = document.createElement('textarea');
-      el.value = text;
-      el.setAttribute('readonly', 'true');
-      el.style.position = 'fixed';
-      el.style.left = '-9999px';
-      el.style.top = '0';
-      document.body.appendChild(el);
-      el.select();
-      const ok = document.execCommand('copy');
-      document.body.removeChild(el);
-      return ok;
-    } catch {
-      return false;
-    }
-  };
-
-  const copyWithToast = async (value, label = 'Valeur') => {
-    const ok = await copyToClipboard(value);
-    setToast(
-      ok
-        ? { type: 'success', message: `${label} copi�.` }
-        : { type: 'error', message: `Impossible de copier ${label}.` }
-    );
-  };
-
-  const closeConfirm = () => {
-    if (confirmLoading) return;
-    setConfirmOpen(false);
-    setConfirmAction(null);
-    setConfirmDetails(null);
-  };
-
-  const submitConfirm = async () => {
-    if (confirmLoading) return;
-
-    if (confirmExpectedText) {
-      const expected = normalizeText(confirmExpectedText);
-      const actual = normalizeText(confirmInput);
-      if (expected !== actual) {
-        setConfirmError(`Tape \"${expected}\" pour confirmer.`);
-        return;
-      }
-    }
-
-    if (!confirmAction) {
-      closeConfirm();
-      return;
-    }
-
-    try {
-      setConfirmLoading(true);
-      setConfirmError('');
-      const result = await confirmAction();
-      if (result === false) return;
-      closeConfirm();
-    } catch (err) {
-      console.error(err);
-      setConfirmError(
-        err?.response?.data?.message || "Action impossible. R�essaie."
-      );
-    } finally {
-      setConfirmLoading(false);
-    }
-  };
 
 
   const refreshSelectedPlayer = async () => {
@@ -1734,21 +1660,7 @@ function AdminPage() {
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-amber-950 text-slate-100">
       <Toast toast={toast} />
 
-      <ConfirmModal
-        open={confirmOpen}
-        title={confirmTitle}
-        message={confirmMessage}
-        danger={confirmDanger}
-        confirmLabel={confirmLabel}
-        expectedText={confirmExpectedText}
-        inputValue={confirmInput}
-        onInputChange={setConfirmInput}
-        details={confirmDetails}
-        loading={confirmLoading}
-        error={confirmError}
-        onCancel={closeConfirm}
-        onConfirm={submitConfirm}
-      />
+      <ConfirmModal {...confirmProps} />
 
       <div className="max-w-6xl mx-auto px-4 py-10 md:py-16">
         <AdminHeader onHome={() => navigate('/')} />
