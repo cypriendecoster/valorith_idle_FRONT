@@ -1,10 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { adminService } from '../../services/AdminService';
 import {
   normalizeText,
   toNumberOrNull,
   toBooleanInt,
 } from '../../utils/adminFormatters';
+import { applyOptimisticRowUpdate } from './balanceHelpers';
 import {
   mergedRow as mergedRowUtil,
   getRowDiffs as getRowDiffsUtil,
@@ -14,10 +15,6 @@ import {
 export default function useBalanceState({
   activeTab,
   search,
-  edits,
-  setEdits,
-  saving,
-  setSaving,
   realms,
   setRealms,
   resources,
@@ -38,6 +35,9 @@ export default function useBalanceState({
   setToast,
   openConfirm,
 }) {
+  const [edits, setEdits] = useState({});
+  const [saving, setSaving] = useState({});
+
   const updateField = (type, id, field, value) => {
     const key = `${type}:${id}`;
     setEdits((prev) => ({
@@ -107,94 +107,6 @@ export default function useBalanceState({
     return (list || []).filter(matchesSearch);
   }, [activeTab, realms, realmUnlockCosts, resources, factories, skills, search]);
 
-  const applyOptimisticRowUpdate = (type, id, nextRow) => {
-    const numericId = Number(id);
-
-    if (type === 'realms') {
-      const prevRow = (realms || []).find((r) => Number(r.id) === numericId);
-      setRealms((prev) =>
-        (prev || []).map((r) => (Number(r.id) === numericId ? nextRow : r))
-      );
-      return () => {
-        if (!prevRow) return;
-        setRealms((prev) =>
-          (prev || []).map((r) => (Number(r.id) === numericId ? prevRow : r))
-        );
-      };
-    }
-
-    if (type === 'resources') {
-      const prevRow = (resources || []).find((r) => Number(r.id) === numericId);
-      setResources((prev) =>
-        (prev || []).map((r) => (Number(r.id) === numericId ? nextRow : r))
-      );
-      return () => {
-        if (!prevRow) return;
-        setResources((prev) =>
-          (prev || []).map((r) => (Number(r.id) === numericId ? prevRow : r))
-        );
-      };
-    }
-
-    if (type === 'factories') {
-      const prevRow = (factories || []).find((r) => Number(r.id) === numericId);
-      setFactories((prev) =>
-        (prev || []).map((r) => (Number(r.id) === numericId ? nextRow : r))
-      );
-      return () => {
-        if (!prevRow) return;
-        setFactories((prev) =>
-          (prev || []).map((r) => (Number(r.id) === numericId ? prevRow : r))
-        );
-      };
-    }
-
-    if (type === 'skills') {
-      const prevRow = (skills || []).find((r) => Number(r.id) === numericId);
-      setSkills((prev) =>
-        (prev || []).map((r) => (Number(r.id) === numericId ? nextRow : r))
-      );
-      return () => {
-        if (!prevRow) return;
-        setSkills((prev) =>
-          (prev || []).map((r) => (Number(r.id) === numericId ? prevRow : r))
-        );
-      };
-    }
-
-    if (type === 'realm_unlock_costs') {
-      const prevRow = (realmUnlockCosts || []).find(
-        (r) => Number(r.id) === numericId
-      );
-      setRealmUnlockCosts((prev) =>
-        (prev || []).map((r) => (Number(r.id) === numericId ? nextRow : r))
-      );
-      return () => {
-        if (!prevRow) return;
-        setRealmUnlockCosts((prev) =>
-          (prev || []).map((r) => (Number(r.id) === numericId ? prevRow : r))
-        );
-      };
-    }
-
-    if (type === 'endgame_requirements') {
-      const prevRow = (endgameRequirements || []).find(
-        (r) => Number(r.id) === numericId
-      );
-      setEndgameRequirements((prev) =>
-        (prev || []).map((r) => (Number(r.id) === numericId ? nextRow : r))
-      );
-      return () => {
-        if (!prevRow) return;
-        setEndgameRequirements((prev) =>
-          (prev || []).map((r) => (Number(r.id) === numericId ? prevRow : r))
-        );
-      };
-    }
-
-    return null;
-  };
-
   const handleSave = async (type, row) => {
     const id = row.id;
     if (id == null) return false;
@@ -215,7 +127,23 @@ export default function useBalanceState({
     let rollbackOptimistic = null;
 
     try {
-      rollbackOptimistic = applyOptimisticRowUpdate(type, id, merged);
+      rollbackOptimistic = applyOptimisticRowUpdate({
+        type,
+        id,
+        nextRow: merged,
+        realms,
+        setRealms,
+        resources,
+        setResources,
+        factories,
+        setFactories,
+        skills,
+        setSkills,
+        realmUnlockCosts,
+        setRealmUnlockCosts,
+        endgameRequirements,
+        setEndgameRequirements,
+      });
       if (type === 'realms') {
         await adminService.updateRealm(id, {
           code: normalizeText(merged.code),
@@ -599,6 +527,8 @@ export default function useBalanceState({
   };
 
   return {
+    edits,
+    saving,
     updateField,
     isRowSaving,
     mergedRow,

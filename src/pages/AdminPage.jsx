@@ -71,9 +71,6 @@ function AdminPage() {
   const [createSaving, setCreateSaving] = useState(false);
 
   const [search, setSearch] = useState('');
-  const [edits, setEdits] = useState({});
-  const [saving, setSaving] = useState({});
-
   const [supportStatus, setSupportStatus] = useState('OPEN');
   const [supportSearch, setSupportSearch] = useState('');
   const [supportCategory, setSupportCategory] = useState('');
@@ -179,6 +176,7 @@ function AdminPage() {
   });
 
   const {
+    edits,
     updateField,
     isRowSaving,
     mergedRow,
@@ -196,10 +194,6 @@ function AdminPage() {
   } = useBalanceState({
     activeTab,
     search,
-    edits,
-    setEdits,
-    saving,
-    setSaving,
     realms,
     setRealms,
     resources,
